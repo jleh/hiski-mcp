@@ -50,6 +50,15 @@ describe("server", () => {
     }
   });
 
+  it("offers a continuation point only for single-book searches", async () => {
+    const { asiakas } = await yhdista();
+    const { tools } = await asiakas.listTools();
+    const kentat = (nimi: string) =>
+      Object.keys(tools.find((t) => t.name === nimi)!.inputSchema.properties ?? {});
+    expect(kentat("hae_kastetut")).toContain("jatkokohta");
+    expect(kentat("hae_kaikki")).not.toContain("jatkokohta");
+  });
+
   it("gives search guidance in its instructions", async () => {
     const { asiakas } = await yhdista();
     const ohjeet = asiakas.getInstructions();

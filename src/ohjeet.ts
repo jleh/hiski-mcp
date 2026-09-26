@@ -21,5 +21,5 @@ Hakusanat:
 Hakutapa:
 - Kun seurakunta tiedetään, haku yhdestä seurakunnasta on nopein ja tarkin. Usean seurakunnan haussa ehtoja kannattaa tarkentaa ja pitää maksimi pienenä.
 - Hakutuloksessa henkilö on yksi merkkijono (ammatti ja nimet yhdessä); hae_tapahtuma antaa ammatin, etunimen, patronyymin, sukunimen ja iän eriteltyinä sekä kommentit.
-- Katkaistun tuloksen voi jatkaa jatkokohdalla samalla haulla samalle seurakunnalle.
+- Katkaistun tuloksen voi jatkaa jatkokohdalla samalla haulla samalle seurakunnalle. hae_kaikki-hakua ei voi jatkaa; sen katkennutta kirjaa voi hakea kirjan omalla työkalulla.
 - hae_kaikki hakee henkilöä kaikista kirjoista kerralla; se sopii ensimmäiseksi hauksi, kun tiedossa on vain nimi ja seurakunta.`;

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { HiskiClient } from "./client.js";
 import type { HakuKirja } from "./hakutulos.js";
 import type { Lomakekirja } from "./lomake.js";
-import { hakutuloksenHuomautukset, kirjojenVuodet, TyokaluVirhe } from "./muotoilu.js";
+import { kirjojenVuodet, muotoileHakutulos, TyokaluVirhe } from "./muotoilu.js";
 import { etsiSeurakunta, ratkaiseSeurakunnat, type Seurakunta } from "./parishes.js";
 
 /** What a tool handler gets besides its arguments. */
@@ -69,13 +69,12 @@ const haku =
       },
       k.signal,
     );
-    const huomautukset = hakutuloksenHuomautukset(tulos, {
+    return muotoileHakutulos(tulos, {
       kirja: hakukirja,
       seurakunnat,
       alkuvuosi: args.alkuvuosi,
       loppuvuosi: args.loppuvuosi,
     });
-    return { ...tulos, ...(huomautukset.length > 0 && { huomautukset }) };
   };
 
 async function haeTapahtuma(
@@ -164,7 +163,8 @@ const vuosi = (mika: string) =>
     .optional()
     .describe(`${mika}: vvvv, kk.vvvv tai pp.kk.vvvv (esim. 1834, 5.1834 tai 21.9.1834).`);
 
-const yhteiset = {
+/** Parameters of every search tool. */
+const hakuehdot = {
   seurakunnat,
   alkuvuosi: vuosi("Hakuvälin alku"),
   loppuvuosi: vuosi("Hakuvälin loppu"),
@@ -177,6 +177,14 @@ const yhteiset = {
     .describe(
       "Tapahtumia enintään seurakuntaa kohden; pyöristetään ylöspäin arvoon 15, 30, 50, 100, 250, 500 tai 1000. Oletus 50 yhdelle seurakunnalle ja 15 usealle.",
     ),
+};
+
+/**
+ * Parameters of single-book searches. An all-books search has no
+ * continuation: Hiski's continuation point belongs to one book's search.
+ */
+const yhteiset = {
+  ...hakuehdot,
   jatkokohta: z
     .string()
     .regex(/^\d+$/)
@@ -347,7 +355,7 @@ export const TYOKALUT: Tyokalu[] = [
     kuvaus: `Hakee henkilöä Hiskin kaikista kirjoista kerralla (kastetut, vihityt, haudatut, muuttaneet) yhdestä tai useammasta seurakunnasta. Tulos on jaettu kirjoittain. ${HAKUTULOS}`,
     verkko: true,
     skeema: {
-      ...yhteiset,
+      ...hakuehdot,
       ...henkilo("", "Henkilön"),
       paikka: paikka("Kylä tai talo."),
       sisaltaa_tekstin: z

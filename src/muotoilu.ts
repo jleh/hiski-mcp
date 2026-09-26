@@ -66,15 +66,45 @@ const vuosiluku = (arvo: string | undefined) => {
  * unknown search words, parishes without the book and years outside what
  * Hiski has indexed for the parish.
  */
-export function hakutuloksenHuomautukset(
+interface Hakutiedot {
+  kirja: string;
+  seurakunnat: readonly Seurakunta[];
+  alkuvuosi?: string;
+  loppuvuosi?: string;
+}
+
+/** The single-book tool for a book in an all-books result. */
+const KIRJAN_TYOKALU: Record<string, string> = {
+  kastetut: "hae_kastetut",
+  vihityt: "hae_vihityt",
+  haudatut: "hae_haudatut",
+  smuutt: "hae_muuttaneet (suunta sisaan)",
+  umuutt: "hae_muuttaneet (suunta pois)",
+};
+
+/**
+ * The search result as the agent gets it, with notes. In an all-books search
+ * Hiski's continuation point belongs to one book's search, not to the
+ * all-books search, so it is left out there.
+ */
+export function muotoileHakutulos(
   tulos: HakuTulos,
-  pyynto: {
-    kirja: string;
-    seurakunnat: readonly Seurakunta[];
-    alkuvuosi?: string;
-    loppuvuosi?: string;
-  },
-): string[] {
+  pyynto: Hakutiedot,
+): HakuTulos & { huomautukset?: string[] } {
+  const lohkot =
+    pyynto.kirja === "kaikki"
+      ? tulos.lohkot.map((lohko) => {
+          const kopio = { ...lohko };
+          delete kopio.jatkokohta;
+          return kopio;
+        })
+      : tulos.lohkot;
+  const valmis = { ...tulos, lohkot };
+  const huomautukset = hakutuloksenHuomautukset(valmis, pyynto);
+  return { ...valmis, ...(huomautukset.length > 0 && { huomautukset }) };
+}
+
+function hakutuloksenHuomautukset(tulos: HakuTulos, pyynto: Hakutiedot): string[] {
   const huomautukset: string[] = [];
   const kirjanNimi = KIRJAN_NIMI[pyynto.kirja] ?? pyynto.kirja;
 
@@ -84,7 +114,9 @@ export function hakutuloksenHuomautukset(
     const noin = lohko.loytyi_noin === undefined ? "" : `, löytyi noin ${lohko.loytyi_noin}`;
     const jatko = lohko.jatkokohta
       ? ` Hakua voi jatkaa antamalla jatkokohta "${lohko.jatkokohta}" samalla haulla pelkälle seurakunnalle ${koodi}, tai hakua voi rajata.`
-      : " Hakua voi rajata tai maksimia kasvattaa.";
+      : pyynto.kirja === "kaikki"
+        ? ` Hakua voi rajata tai hakea kirjan omalla työkalulla ${KIRJAN_TYOKALU[lohko.kirja] ?? ""} suuremmalla maksimilla.`
+        : " Hakua voi rajata tai maksimia kasvattaa.";
     huomautukset.push(
       `${nimi} (${KIRJAN_NIMI[lohko.kirja] ?? lohko.kirja}): näytettiin ${lohko.tapahtumat.length}${noin}.${jatko}`,
     );
