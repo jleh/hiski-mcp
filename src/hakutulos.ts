@@ -177,8 +177,8 @@ export function parseHakutulos(html: string): HakuTulos {
  */
 function parseLohko(otsikko: string, sisalto: string): Lohko[] {
   const erotin = otsikko.lastIndexOf(" - ");
-  const nimi = otsikko.slice(0, erotin);
-  const otsikonKirja = KIRJAT_OTSIKOSTA[otsikko.slice(erotin + 3)];
+  const nimi = erotin >= 0 ? otsikko.slice(0, erotin) : otsikko;
+  const otsikonKirja = erotin >= 0 ? KIRJAT_OTSIKOSTA[otsikko.slice(erotin + 3)] : undefined;
   const { hakutermit, huomautukset } = parseHakutermit(sisalto);
   const taulukot = [...sisalto.matchAll(TAULUKKO)];
   return taulukot.map((taulukko, i) => {

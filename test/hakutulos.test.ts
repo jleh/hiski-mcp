@@ -271,3 +271,16 @@ describe("parseHakutulos: kaikki", () => {
     expect(lohkot[1]!.tapahtumat[0]).toMatchObject({ kirja: "vihityt", mies: "Bonde Värd ungkarl Johan Hansson" });
   });
 });
+
+describe("parseHakutulos: unusual headings", () => {
+  it("keeps the whole name when the heading has no book part", () => {
+    const html =
+      '<FONT SIZE="+2"><B>Orimattila</B></FONT><TABLE BORDER=1><TR><TH>Syntynyt</TABLE>' +
+      '<P>Näillä hakuehdoilla ei löytynyt yhtään tapahtumia.<P><FORM>' +
+      '<input name=srk type=hidden value="0366"><INPUT NAME="kirja" TYPE=hidden VALUE="kastetut"></FORM>';
+    expect(parseHakutulos(html).lohkot[0]).toMatchObject({
+      seurakunta: { koodi: "0366", nimi: "Orimattila" },
+      kirja: "kastetut",
+    });
+  });
+});
