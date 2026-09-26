@@ -34,8 +34,12 @@ export async function yhdista(...vastaukset: Vastaus[]) {
 }
 
 /** Connects an MCP client to a server whose Hiski requests go to the given fetch. */
-export async function yhdistaFetchilla(fetch: typeof globalThis.fetch): Promise<Client> {
-  const hiski = new HiskiClient({ fetch, odota: () => Promise.resolve() });
+export function yhdistaFetchilla(fetch: typeof globalThis.fetch): Promise<Client> {
+  return yhdistaClientilla(new HiskiClient({ fetch, odota: () => Promise.resolve() }));
+}
+
+/** Connects an MCP client to a server using the given Hiski client (the real one in live tests). */
+export async function yhdistaClientilla(hiski: HiskiClient): Promise<Client> {
   const [asiakkaanPaa, palvelimenPaa] = InMemoryTransport.createLinkedPair();
   await luoPalvelin(hiski).connect(palvelimenPaa);
   const asiakas = new Client({ name: "testi", version: "0.0.0" });

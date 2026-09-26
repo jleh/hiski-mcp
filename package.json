@@ -27,7 +27,8 @@
     "synkronoi-manifesti": "tsx scripts/synkronoi-manifesti.ts",
     "version": "npm run synkronoi-manifesti && prettier --write manifest.json && git add manifest.json",
     "paketoi": "tsx scripts/paketoi-mcpb.ts",
-    "testaa-paketti": "tsx scripts/testaa-mcpb.ts"
+    "testaa-paketti": "tsx scripts/testaa-mcpb.ts",
+    "test:live": "vitest run --config vitest.live.config.ts"
   },
   "keywords": [
     "mcp",
