@@ -47,3 +47,52 @@ describe("parseTapahtumasivu: common fields", () => {
     });
   });
 });
+
+describe("parseTapahtumasivu: kastetut", () => {
+  it("splits the parents into occupation, names and age", () => {
+    expect(tapahtuma("tapahtuma-kastetut.html")).toMatchObject({
+      kirja: "kastetut",
+      syntynyt: "21.9.1834",
+      kastettu: "22.9.1834",
+      kyla: "Njemis",
+      talo: "Bärnilä",
+      isa: { ammatti: "B.", etunimi: "Johan", patronyymi: "Hansson" },
+      aiti: { etunimi: "Otteliana", patronyymi: "Andersdotter" },
+      lapsi: "Maria Sofia",
+    });
+    expect(tapahtuma("tapahtuma-kastetut.html").isa).toEqual({
+      ammatti: "B.",
+      etunimi: "Johan",
+      patronyymi: "Hansson",
+    });
+  });
+
+  it("reads the mother's age", () => {
+    expect(tapahtuma("tapahtuma-kastetut-ika.html")).toMatchObject({
+      aiti: { etunimi: "Otteliana", patronyymi: "Andersdotter", ika: "22" },
+    });
+  });
+
+  it("keeps a field comment on the person and the original comment", () => {
+    expect(tapahtuma("tapahtuma-kastetut-kommentit.html")).toMatchObject({
+      aiti: {
+        etunimi: "Catharina",
+        ika: "28",
+        kenttakommentit: { patronyymi: ["ei patronyymiä"] },
+      },
+      kommentit: [{ tyyppi: "alkup", alikentta: "ALKUPKOMM", teksti: "Död 17.3.1850" }],
+    });
+  });
+});
+
+describe("parseTapahtumasivu: empty values", () => {
+  it("leaves out a person row without any data", () => {
+    const html =
+      '<H2>Orimattila</H2><A HREF="/hiski?fi+t1">Linkki tähän tapahtumaan</A>' +
+      "<TABLE BORDER=4><TR><TD><SMALL>Isä</SMALL> <TD>&nbsp; <TD>&nbsp; <TD>&nbsp; <TD>&nbsp; <TD>&nbsp;</TD></TR>" +
+      "<TR><TD><SMALL>Lapsi</SMALL> <TD COLSPAN=5>Maria</TABLE>" +
+      '<FORM><INPUT NAME="srk" VALUE="0366"><INPUT NAME="kirja" VALUE="kastetut"></FORM>';
+    const sivu = parseTapahtumasivu(html);
+    expect(sivu.tila === "ok" && sivu.tapahtuma).not.toHaveProperty("isa");
+  });
+});

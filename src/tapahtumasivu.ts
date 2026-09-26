@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
 import { HISKI_URL, type HakuKirja, type Kommentti } from "./hakutulos.js";
+import { jasennaSolu, type Solu } from "./solu.js";
 import { siisti } from "./teksti.js";
 
 interface Yhteiset {
@@ -13,7 +14,30 @@ interface Yhteiset {
   linkit?: { teksti: string; url: string }[];
 }
 
-export type TapahtumanTiedot = Yhteiset & { kirja: HakuKirja };
+/** A person split into the fields Hiski stores separately. */
+export interface Henkilo {
+  ammatti?: string;
+  etunimi?: string;
+  patronyymi?: string;
+  sukunimi?: string;
+  ika?: string;
+  /** Short comments attached to a single field, keyed by field name. */
+  kenttakommentit?: Record<string, string[]>;
+}
+
+export interface KastetunTiedot extends Yhteiset {
+  kirja: "kastetut";
+  syntynyt?: string;
+  kastettu?: string;
+  kyla?: string;
+  talo?: string;
+  isa?: Henkilo;
+  aiti?: Henkilo;
+  lapsi?: string;
+  kenttakommentit?: Record<string, string[]>;
+}
+
+export type TapahtumanTiedot = KastetunTiedot;
 
 export type Tapahtumasivu =
   | { tila: "ok"; tapahtuma: TapahtumanTiedot }
@@ -29,6 +53,47 @@ interface Rivi {
 }
 
 const VIRHE = "Virhe parametrissa!";
+
+const HENKILON_KENTAT = ["ammatti", "etunimi", "patronyymi", "sukunimi", "ika"] as const;
+
+type Kasittelija = (tapahtuma: Kentat, solut: Solu[]) => void;
+type Kentat = Record<string, unknown>;
+
+/** Sets the cells' values to the given fields; "mies.kyla" sets a nested field. */
+const arvot =
+  (...kentat: string[]): Kasittelija =>
+  (tapahtuma, solut) =>
+    kentat.forEach((kentta, i) => {
+      const { arvo, kommentit } = solut[i] ?? { kommentit: [] };
+      if (!arvo && kommentit.length === 0) return;
+      // Nested objects are only created for data, so an empty person is left out.
+      const polku = kentta.split(".");
+      const nimi = polku.pop()!;
+      const kohde = polku.reduce((olio, osa) => (olio[osa] ??= {}) as Kentat, tapahtuma);
+      if (arvo) kohde[nimi] = arvo;
+      if (kommentit.length > 0) ((kohde.kenttakommentit ??= {}) as Kentat)[nimi] = kommentit;
+    });
+
+/** Reads a person row: occupation, first name, patronymic, surname and age. */
+const henkilo =
+  (kentta: string): Kasittelija =>
+  (tapahtuma, solut) =>
+    arvot(...HENKILON_KENTAT.map((k) => `${kentta}.${k}`))(tapahtuma, solut);
+
+/** Which fields each row fills, keyed by the row's heading path, per book. */
+const RIVIT: Record<HakuKirja, Record<string, Kasittelija>> = {
+  kastetut: {
+    "Syntynyt / Kastettu": arvot("syntynyt", "kastettu"),
+    "Kylä / Talo": arvot("kyla", "talo"),
+    Isä: henkilo("isa"),
+    Äiti: henkilo("aiti"),
+    Lapsi: arvot("lapsi"),
+  },
+  vihityt: {},
+  haudatut: {},
+  smuutt: {},
+  umuutt: {},
+};
 
 /** Parses a Hiski event page (/hiski?fi+SRK+KIRJA+N). */
 export function parseTapahtumasivu(html: string): Tapahtumasivu {
@@ -59,16 +124,21 @@ export function parseTapahtumasivu(html: string): Tapahtumasivu {
       url: new URL($(a).attr("href") ?? "", HISKI_URL).href,
     }));
 
-  return {
-    tila: "ok",
-    tapahtuma: {
-      seurakunta: { koodi, nimi },
-      kirja,
-      pysyva_linkki: new URL(pysyva, HISKI_URL).href,
-      ...(kommentit.length > 0 && { kommentit }),
-      ...(linkit.length > 0 && { linkit }),
-    },
+  const tapahtuma: Kentat = {
+    seurakunta: { koodi, nimi },
+    kirja,
+    pysyva_linkki: new URL(pysyva, HISKI_URL).href,
   };
+  for (const rivi of rivit) {
+    const kasittelija = RIVIT[kirja][rivi.otsake.join(" › ")];
+    kasittelija?.(
+      tapahtuma,
+      rivi.solut.get().map((s) => jasennaSolu($, $(s))),
+    );
+  }
+  if (kommentit.length > 0) tapahtuma.kommentit = kommentit;
+  if (linkit.length > 0) tapahtuma.linkit = linkit;
+  return { tila: "ok", tapahtuma: tapahtuma as unknown as TapahtumanTiedot };
 }
 
 /** A cell holding only a <SMALL> heading, e.g. <TD><SMALL>Isä</SMALL>. */
