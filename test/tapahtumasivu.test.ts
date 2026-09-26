@@ -60,7 +60,7 @@ describe("parseTapahtumasivu: kastetut", () => {
       aiti: { etunimi: "Otteliana", patronyymi: "Andersdotter" },
       lapsi: "Maria Sofia",
     });
-    expect(tapahtuma("tapahtuma-kastetut.html").isa).toEqual({
+    expect(tapahtuma("tapahtuma-kastetut.html")).toHaveProperty("isa", {
       ammatti: "B.",
       etunimi: "Johan",
       patronyymi: "Hansson",
@@ -94,5 +94,29 @@ describe("parseTapahtumasivu: empty values", () => {
       '<FORM><INPUT NAME="srk" VALUE="0366"><INPUT NAME="kirja" VALUE="kastetut"></FORM>';
     const sivu = parseTapahtumasivu(html);
     expect(sivu.tila === "ok" && sivu.tapahtuma).not.toHaveProperty("isa");
+  });
+});
+
+describe("parseTapahtumasivu: vihityt", () => {
+  it("reads both spouses with their homes and split names", () => {
+    const vihitty = tapahtuma("tapahtuma-vihityt.html");
+    expect(vihitty).toMatchObject({ kirja: "vihityt", vihitty: "28.9.1834" });
+    expect(vihitty).not.toHaveProperty("kuulutettu");
+    expect(vihitty).toMatchObject({
+      mies: {
+        kyla: "Njemis",
+        talo: "Bärnilä",
+        ammatti: "Bonde Värd ungkarl",
+        etunimi: "Johan",
+        patronyymi: "Hansson",
+      },
+      vaimo: {
+        kyla: "Njemis",
+        talo: "Bärnilä",
+        ammatti: "Bonde dotter",
+        etunimi: "Otteliana",
+        patronyymi: "Anders:dr",
+      },
+    });
   });
 });

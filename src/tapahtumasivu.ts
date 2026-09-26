@@ -37,7 +37,21 @@ export interface KastetunTiedot extends Yhteiset {
   kenttakommentit?: Record<string, string[]>;
 }
 
-export type TapahtumanTiedot = KastetunTiedot;
+/** A spouse: their home village and farm with the split name. */
+export interface Puoliso extends Henkilo {
+  kyla?: string;
+  talo?: string;
+}
+
+export interface VihitynTiedot extends Yhteiset {
+  kirja: "vihityt";
+  kuulutettu?: string;
+  vihitty?: string;
+  mies?: Puoliso;
+  vaimo?: Puoliso;
+}
+
+export type TapahtumanTiedot = KastetunTiedot | VihitynTiedot;
 
 export type Tapahtumasivu =
   | { tila: "ok"; tapahtuma: TapahtumanTiedot }
@@ -89,7 +103,13 @@ const RIVIT: Record<HakuKirja, Record<string, Kasittelija>> = {
     Äiti: henkilo("aiti"),
     Lapsi: arvot("lapsi"),
   },
-  vihityt: {},
+  vihityt: {
+    "Kuulutettu / Vihitty": arvot("kuulutettu", "vihitty"),
+    "Mies › Kylä / Talo": arvot("mies.kyla", "mies.talo"),
+    "Mies › Nimi": henkilo("mies"),
+    "Vaimo › Kylä / Talo": arvot("vaimo.kyla", "vaimo.talo"),
+    "Vaimo › Nimi": henkilo("vaimo"),
+  },
   haudatut: {},
   smuutt: {},
   umuutt: {},
