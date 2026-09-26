@@ -1,0 +1,286 @@
+import { describe, expect, it } from "vitest";
+import { FIXTURET } from "../scripts/fixturet.js";
+import { parseHakutulos } from "../src/hakutulos.js";
+import { lueFixture } from "./helpers.js";
+
+const jasenna = (fixture: string) => parseHakutulos(lueFixture(fixture));
+
+describe("parseHakutulos: blocks", () => {
+  it("parses a single-parish block with its search terms", () => {
+    const { lohkot, yhteensa } = jasenna("haku-kastetut-perus.html");
+    expect(yhteensa).toBeUndefined();
+    expect(lohkot).toHaveLength(1);
+    const [lohko] = lohkot;
+    expect(lohko).toMatchObject({
+      seurakunta: { koodi: "0366", nimi: "Orimattila" },
+      kirja: "kastetut",
+      katkaistu: false,
+    });
+    expect(lohko!.tapahtumat).toHaveLength(9);
+    expect(lohko!.hakutermit).toEqual([
+      { kentta: "Isän etunimi", haku: "JOHAN", muodot: ["Johan", "Johannes", "Johanss."] },
+      {
+        kentta: "Isän patronyymi",
+        haku: "HANS",
+        muodot: ["Hans", "Hansintytär", "Hansinp.", "Hansentytär", "Hansenp.", "Hansdott."],
+      },
+      { kentta: "Äidin etunimi", haku: "OTTILIA", muodot: ["Otilia"] },
+      {
+        kentta: "Äidin patronyymi",
+        haku: "ANDERS",
+        muodot: [
+          "Anders",
+          "Andersdot.",
+          "Andersd:dr",
+          "Andersgr.",
+          "Andersdotters",
+          "Anders Wilh.ss.",
+        ],
+      },
+    ]);
+    expect(lohko!.huomautukset).toBeUndefined();
+  });
+
+  it("reports a truncated single-parish result with its continuation point", () => {
+    const [lohko] = jasenna("haku-kastetut-katkaistu.html").lohkot;
+    expect(lohko).toMatchObject({ katkaistu: true, loytyi_noin: 416, jatkokohta: "17681" });
+    expect(lohko!.tapahtumat).toHaveLength(15);
+    expect(lohko!.huomautukset).toEqual(["Haetaan vuodet 1830 - 1840"]);
+  });
+
+  it("splits a multi-parish result into blocks with their own continuation points", () => {
+    const { lohkot, yhteensa } = jasenna("haku-kastetut-katkaistu-monta.html");
+    expect(yhteensa).toBe(565);
+    expect(lohkot.map((l) => [l.seurakunta.koodi, l.seurakunta.nimi, l.jatkokohta])).toEqual([
+      ["0015", "Artjärvi - Artsjö", "8154"],
+      ["0366", "Orimattila", "17681"],
+    ]);
+    for (const lohko of lohkot) {
+      expect(lohko.katkaistu).toBe(true);
+      expect(lohko.loytyi_noin).toBeUndefined();
+      expect(lohko.tapahtumat).toHaveLength(15);
+    }
+  });
+
+  it("parses a continued search", () => {
+    const [lohko] = jasenna("haku-kastetut-jatko.html").lohkot;
+    expect(lohko!.huomautukset).toEqual([
+      "Jatketaan edellistä tulostusta",
+      "Haetaan vuodet 1830 - 1840",
+    ]);
+    expect(lohko!.tapahtumat[0]!.numero).toBe(17685);
+  });
+
+  it("flags search terms that are not in the database", () => {
+    const [lohko] = jasenna("haku-kastetut-tyhja.html").lohkot;
+    expect(lohko!.tapahtumat).toEqual([]);
+    expect(lohko!.katkaistu).toBe(false);
+    expect(lohko!.hakutermit).toEqual([
+      { kentta: "Lapsen etunimi", haku: "XYZZYQ", ei_tietokannassa: true },
+    ]);
+  });
+
+  it("returns no blocks for a page without results", () => {
+    expect(jasenna("haku-ei-lohkoja.html")).toEqual({ lohkot: [] });
+  });
+});
+
+/** The counts Hiski prints after each table, in page order. */
+function ilmoitetutMaarat(html: string): number[] {
+  const maarat = html.matchAll(
+    /(\d+) tapahtumaa löytyi\.|Näytettiin (\d+) tapahtumaa|yli maksimimäärän \((\d+) tapahtumaa\)|ei löytynyt yhtään/g,
+  );
+  return [...maarat].map((m) => Number(m[1] ?? m[2] ?? m[3] ?? 0));
+}
+
+describe.each(FIXTURET.filter((f) => f.tiedosto.startsWith("haku-")))(
+  "parseHakutulos: $tiedosto",
+  ({ tiedosto }) => {
+    it("finds as many events as Hiski reports", () => {
+      const html = lueFixture(tiedosto);
+      const { lohkot } = parseHakutulos(html);
+      expect(lohkot.map((l) => l.tapahtumat.length)).toEqual(ilmoitetutMaarat(html));
+    });
+  },
+);
+
+describe("parseHakutulos: kastetut", () => {
+  it("parses the columns of a baptism", () => {
+    const [lohko] = jasenna("haku-kastetut-perus.html").lohkot;
+    expect(lohko!.tapahtumat[0]).toEqual({
+      kirja: "kastetut",
+      numero: 18795,
+      url: "https://hiski.genealogia.fi/hiski?fi+0366+kastetut+18795",
+      syntynyt: "21.9.1834",
+      kastettu: "22.9.1834",
+      kyla: "Njemis",
+      talo: "Bärnilä",
+      isa: "B. Johan Hansson",
+      aiti: "Otteliana Andersdotter",
+      lapsi: "Maria Sofia",
+    });
+    expect(lohko!.tapahtumat[2]).toMatchObject({ aiti: "Otteliana Andersdotter", aidin_ika: "22" });
+  });
+
+  const kommentit = jasenna("haku-kastetut-kommentit.html").lohkot[0]!.tapahtumat;
+  const numerolla = (numero: number) => kommentit.find((t) => t.numero === numero);
+
+  it("separates field comments and leaves empty fields out", () => {
+    const tapahtuma = numerolla(22282);
+    expect(tapahtuma).toMatchObject({
+      lapsi: "Theda Aurora",
+      aiti: "Inh. Anna Stina Lenasdr.",
+      aidin_ika: "24",
+      kenttakommentit: { lapsi: ["oägta"] },
+    });
+    expect(tapahtuma).not.toHaveProperty("isa");
+    expect(tapahtuma).not.toHaveProperty("talo");
+  });
+
+  it("finds the mother's age after a field comment", () => {
+    expect(numerolla(22288)).toMatchObject({
+      aiti: "Catharina",
+      aidin_ika: "28",
+      kenttakommentit: { aiti: ["ei patronyymiä"] },
+    });
+  });
+
+  it("finds the mother's age without a separating non-breaking space", () => {
+    expect(numerolla(22287)).toMatchObject({ aiti: "Pig. Anna Lovisa Pehrman", aidin_ika: "29" });
+  });
+
+  it("attaches comment rows to the preceding event", () => {
+    expect(numerolla(22287)!.kommentit).toEqual([
+      { tyyppi: "alkup", alikentta: "ALKUPKOMM", teksti: "Död 19.1.1850" },
+    ]);
+    expect(numerolla(22286)).not.toHaveProperty("kommentit");
+  });
+});
+
+describe("parseHakutulos: vihityt", () => {
+  const { lohkot } = jasenna("haku-vihityt-monta.html");
+
+  it("keeps an empty parish block next to one with results", () => {
+    expect(lohkot.map((l) => [l.seurakunta.koodi, l.kirja, l.tapahtumat.length])).toEqual([
+      ["0015", "vihityt", 0],
+      ["0366", "vihityt", 2],
+    ]);
+  });
+
+  it("parses the columns of a marriage, including both spouses' homes", () => {
+    expect(lohkot[1]!.tapahtumat[0]).toEqual({
+      kirja: "vihityt",
+      numero: 3848,
+      url: "https://hiski.genealogia.fi/hiski?fi+0366+vihityt+3848",
+      vihitty: "26.12.1826",
+      miehen_kyla: "Nastola",
+      miehen_talo: "Achtiala Heickerö",
+      mies: "Bonde son u:k: Johan Hansson",
+      vaimo: "Bonde dotter Anna Stina Johansd.",
+      vaimon_kyla: "Kuivando",
+      vaimon_talo: "Skyttälä",
+    });
+  });
+});
+
+describe("parseHakutulos: haudatut", () => {
+  const helsinki = jasenna("haku-haudatut-oma.html").lohkot[0]!.tapahtumat;
+  const numerolla = (numero: number) => helsinki.find((t) => t.numero === numero);
+
+  it("parses the columns of a burial with the age split into units", () => {
+    expect(numerolla(9253)).toEqual({
+      kirja: "haudatut",
+      numero: 9253,
+      url: "https://hiski.genealogia.fi/hiski?fi+0084+haudatut+9253",
+      kuollut: "6.1.1800",
+      haudattu: "9.1.1800",
+      henkilo: "Son Carl Gustaf",
+      kuolinsyy: "Slag",
+      ika: { kuukaudet: "2" },
+      omainen: "Borg: Wikström",
+    });
+    expect(numerolla(9254)).toMatchObject({ ika: { vuodet: "2", kuukaudet: "6" } });
+  });
+
+  it("keeps the recorder's own comment", () => {
+    expect(numerolla(9279)!.kommentit).toEqual([
+      { tyyppi: "alkup", alikentta: "OMA", teksti: "Fiskaren Matts Sundbergs Son [kuollut 2/3 1800]" },
+    ]);
+  });
+
+  it("attaches several comment rows to one event", () => {
+    const orimattila = jasenna("haku-haudatut-monta.html").lohkot[1]!;
+    const tapahtuma = orimattila.tapahtumat.find((t) => t.numero === 18729);
+    expect(tapahtuma).toMatchObject({ ika: { kuukaudet: "6" }, kuolinsyy: "Messling" });
+    expect(tapahtuma!.kommentit).toEqual([
+      { tyyppi: "alkup", alikentta: "ALKUPKOMM", teksti: "N" },
+      { tyyppi: "alkup", alikentta: "IKÄKOMM", teksti: "½ år" },
+      { tyyppi: "alkup", alikentta: "TALLKOMM", teksti: "po. G.barn" },
+    ]);
+  });
+});
+
+describe("parseHakutulos: muuttaneet", () => {
+  it("parses a move into the parish", () => {
+    const [lohko] = jasenna("haku-smuutt.html").lohkot;
+    expect(lohko!.kirja).toBe("smuutt");
+    expect(lohko!.tapahtumat[1]).toEqual({
+      kirja: "smuutt",
+      numero: 1,
+      url: "https://hiski.genealogia.fi/hiski?fi+0015+smuutt+1",
+      saapumispaiva: "6.1.1741",
+      kyla: "Kintula",
+      talo: "Heikkilä t.",
+      henkilo: "Pig. Anna Josephsdr",
+      toinen_paikka: "Hauho",
+      kenttakommentit: { toinen_paikka: ["12.10.40."] },
+      // The empty MUUTKOMM row that follows is left out.
+      kommentit: [{ tyyppi: "alkup", alikentta: "VV", teksti: "\\K2." }],
+    });
+  });
+
+  it("parses a move out of the parish", () => {
+    const [lohko] = jasenna("haku-umuutt.html").lohkot;
+    expect(lohko!.kirja).toBe("umuutt");
+    expect(lohko!.tapahtumat[0]).toEqual({
+      kirja: "umuutt",
+      numero: 0,
+      url: "https://hiski.genealogia.fi/hiski?fi+0015+umuutt+0",
+      lahtopaiva: "26.2.1741",
+      kyla: "Storby",
+      talo: "Tornbergs ?",
+      henkilo: "Drg. Petter Simonsson",
+      toinen_paikka: "Hollola",
+    });
+  });
+});
+
+describe("parseHakutulos: kaikki", () => {
+  it("splits a search over all books into one block per book", () => {
+    const { lohkot } = jasenna("haku-kaikki.html");
+    expect(
+      lohkot.map((l) => [l.seurakunta.koodi, l.kirja, l.tapahtumat.map((t) => t.numero)]),
+    ).toEqual([
+      ["0366", "kastetut", [18795]],
+      ["0366", "vihityt", [4326]],
+    ]);
+    for (const lohko of lohkot) {
+      expect(lohko.huomautukset).toEqual(["Haetaan vuodet 1834 - 1835"]);
+      expect(lohko.katkaistu).toBe(false);
+    }
+    expect(lohkot[1]!.tapahtumat[0]).toMatchObject({ kirja: "vihityt", mies: "Bonde Värd ungkarl Johan Hansson" });
+  });
+});
+
+describe("parseHakutulos: unusual headings", () => {
+  it("keeps the whole name when the heading has no book part", () => {
+    const html =
+      '<FONT SIZE="+2"><B>Orimattila</B></FONT><TABLE BORDER=1><TR><TH>Syntynyt</TABLE>' +
+      '<P>Näillä hakuehdoilla ei löytynyt yhtään tapahtumia.<P><FORM>' +
+      '<input name=srk type=hidden value="0366"><INPUT NAME="kirja" TYPE=hidden VALUE="kastetut"></FORM>';
+    expect(parseHakutulos(html).lohkot[0]).toMatchObject({
+      seurakunta: { koodi: "0366", nimi: "Orimattila" },
+      kirja: "kastetut",
+    });
+  });
+});
