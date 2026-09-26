@@ -1,6 +1,6 @@
 # Julkaisu
 
-Julkaisu tapahtuu tagilla. `.github/workflows/julkaisu.yml` tarkistaa, että tagi, `package.json` ja `manifest.json` ovat samaa versiota. Sen jälkeen se ajaa tarkistukset ja testit, rakentaa `.mcpb`-paketin, luo GitHub Releasen paketteineen ja julkaisee npm-paketin.
+Julkaisu tapahtuu tagilla. `.github/workflows/julkaisu.yml` tarkistaa, että tagi, `package.json` ja `manifest.json` ovat samaa versiota. Sen jälkeen se ajaa tarkistukset ja testit, rakentaa `.mcpb`-paketin, julkaisee npm-paketin ja luo GitHub Releasen paketteineen.
 
 ## Tavallinen julkaisu
 

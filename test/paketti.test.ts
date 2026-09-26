@@ -47,7 +47,6 @@ describe("manifest.json", () => {
   });
 });
 
-/** "20.18.1" → comparable tuple. */
 /** The lowest Node version an engines range allows, in any range form; undefined if unparseable. */
 function alinNodeVersio(alue: string): string | undefined {
   return semver.validRange(alue) ? semver.minVersion(alue)?.version : undefined;
