@@ -1,4 +1,5 @@
 dist
+build
 coverage
 test/fixtures
 # Generated with one parish per line by scripts/paivita-seurakunnat.ts.
