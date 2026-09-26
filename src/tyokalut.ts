@@ -1,5 +1,7 @@
 import { z } from "zod";
 import type { HiskiClient } from "./client.js";
+import { kirjojenVuodet } from "./muotoilu.js";
+import { etsiSeurakunta, ratkaiseSeurakunnat, type Seurakunta } from "./parishes.js";
 
 /** What a tool handler gets besides its arguments. */
 export interface Konteksti {
@@ -23,6 +25,48 @@ const tyokalu = <Skeema extends z.ZodRawShape>(maaritys: Tyokalu<Skeema>) =>
   maaritys as unknown as Tyokalu;
 
 const eiVielaToteutettu = () => Promise.reject(new Error("Työkalua ei ole vielä toteutettu."));
+
+const ETSI_SEURAKUNTA_MAX = 20;
+
+/** Resolves one parish name or code; throws SeurakuntaVirhe with candidates. */
+const ratkaiseYksi = (syote: string): Seurakunta => ratkaiseSeurakunnat([syote])[0]!;
+
+function etsiSeurakuntaa({ nimi }: { nimi: string }) {
+  const osumat = etsiSeurakunta(nimi);
+  if (osumat.length === 0) {
+    return {
+      osumat: [],
+      huomautus: `Nimellä "${nimi}" ei löytynyt seurakuntaa. Nimi voi olla eri muodossa, ruotsiksi tai osa suuremman seurakunnan nimeä.`,
+    };
+  }
+  return {
+    osumat: osumat.slice(0, ETSI_SEURAKUNTA_MAX).map((s) => ({
+      koodi: s.koodi,
+      nimi: s.nimi,
+      ...(s.rinnakkaisnimi && { rinnakkaisnimi: s.rinnakkaisnimi }),
+      vuodet: kirjojenVuodet(s.vuodet),
+    })),
+    ...(osumat.length > ETSI_SEURAKUNTA_MAX && { yhteensa: osumat.length }),
+  };
+}
+
+async function seurakunnanTiedot({ seurakunta }: { seurakunta: string }, k: Konteksti) {
+  const { koodi } = ratkaiseYksi(seurakunta);
+  const tulos = await k.hiski.seurakunta(koodi, k.signal);
+  if (tulos.tila !== "ok") throw new Error(`Hiski ei tunne seurakuntaa ${koodi}.`);
+  const { sivu, tiedot } = tulos;
+  return {
+    koodi: sivu.koodi,
+    nimi: sivu.nimi,
+    kirjat: kirjojenVuodet(Object.fromEntries(sivu.kirjat.map((k) => [k.kirja, k.vuodet]))),
+    naapurit: sivu.naapurit,
+    ...(sivu.huomautus && { huomautus: sivu.huomautus }),
+    ...(tiedot?.maakunta && { maakunta: tiedot.maakunta }),
+    ...(tiedot?.historia && { historia: tiedot.historia }),
+    ...(tiedot?.kylat && { kylat: tiedot.kylat }),
+    ...(tiedot?.vanhat_nimet && { vanhat_nimet: tiedot.vanhat_nimet }),
+  };
+}
 
 // Parameter descriptions carry Hiski's own search advice for each field.
 
@@ -122,7 +166,7 @@ export const TYOKALUT: Tyokalu[] = [
         .min(1)
         .describe('Seurakunnan nimi, osa nimestä tai koodi, esim. "Orimattila", "Turku", "366".'),
     },
-    kasittele: eiVielaToteutettu,
+    kasittele: (args) => Promise.resolve(etsiSeurakuntaa(args)),
   }),
   tyokalu({
     nimi: "seurakunnan_tiedot",
@@ -131,7 +175,7 @@ export const TYOKALUT: Tyokalu[] = [
       "Hakee Hiskistä yhden seurakunnan tiedot: kirjat ja niiden indeksoidut vuodet, naapuriseurakunnat koodeineen, mahdollinen huomautus aineistosta (esim. Karjala-tietokanta), maakunta, historia (perustaminen, emäseurakunta, arkistotuhot), kylät ja vanhat nimet.",
     verkko: true,
     skeema: { seurakunta },
-    kasittele: eiVielaToteutettu,
+    kasittele: seurakunnanTiedot,
   }),
   tyokalu({
     nimi: "hae_kastetut",

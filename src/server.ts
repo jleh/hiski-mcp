@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { HiskiClient } from "./client.js";
+import { virheViesti } from "./muotoilu.js";
 import { OHJEET } from "./ohjeet.js";
 import { TYOKALUT, type Tyokalu } from "./tyokalut.js";
 import { SERVER_NAME, SERVER_VERSION } from "./version.js";
@@ -37,7 +38,7 @@ function rekisteroi(palvelin: McpServer, tyokalu: Tyokalu, hiski: HiskiClient) {
       } catch (virhe) {
         return {
           isError: true,
-          content: [{ type: "text", text: virhe instanceof Error ? virhe.message : String(virhe) }],
+          content: [{ type: "text", text: virheViesti(virhe) }],
         };
       }
     },
