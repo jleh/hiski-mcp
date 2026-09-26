@@ -11,8 +11,10 @@ describe.each(FIXTURET)("fixture $tiedosto", ({ tiedosto, merkisto, sisaltaa }) 
     expect(existsSync(FIXTURE_KANSIO + tiedosto)).toBe(true);
   });
 
-  it("has no Cloudflare script", () => {
-    expect(lueFixture(tiedosto, merkisto)).not.toContain("__CF$cv$params");
+  it("has no per-request Cloudflare additions", () => {
+    const sivu = lueFixture(tiedosto, merkisto);
+    expect(sivu).not.toContain("__CF$cv$params");
+    expect(sivu).not.toContain("/cdn-cgi/l/email-protection#");
   });
 
   it.each(sisaltaa)("contains %j", (teksti) => {

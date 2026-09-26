@@ -8,7 +8,7 @@
  */
 import { writeFileSync } from "node:fs";
 import { setTimeout as odota } from "node:timers/promises";
-import { decodeLatin1, poistaCloudflareSkripti } from "../src/encoding.js";
+import { decodeLatin1, poistaCloudflareLisaykset } from "../src/encoding.js";
 import { FIXTURET, type FixtureMaarittely, type Pyynto } from "./fixturet.js";
 
 const HISKI = "https://hiski.genealogia.fi/hiski";
@@ -58,7 +58,7 @@ const valmiit: [FixtureMaarittely, Uint8Array][] = [];
 const virheet: string[] = [];
 for (const [i, fixture] of ladattavat.entries()) {
   if (i > 0) await odota(TAUKO_MS);
-  const sivu = poistaCloudflareSkripti(await lataaSinnikkaasti(fixture));
+  const sivu = poistaCloudflareLisaykset(await lataaSinnikkaasti(fixture));
   const teksti =
     fixture.merkisto === "utf8" ? Buffer.from(sivu).toString("utf8") : decodeLatin1(sivu);
   const puuttuvat = fixture.sisaltaa.filter((s) => !teksti.includes(s));
