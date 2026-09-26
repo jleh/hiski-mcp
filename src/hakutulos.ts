@@ -49,7 +49,26 @@ export interface Vihitty extends Perus {
   vaimon_talo?: string;
 }
 
-export type Tapahtuma = Kastettu | Vihitty;
+export interface Ika {
+  vuodet?: string;
+  kuukaudet?: string;
+  viikot?: string;
+  paivat?: string;
+}
+
+export interface Haudattu extends Perus {
+  kirja: "haudatut";
+  kuollut?: string;
+  haudattu?: string;
+  kyla?: string;
+  talo?: string;
+  henkilo?: string;
+  kuolinsyy?: string;
+  ika?: Ika;
+  omainen?: string;
+}
+
+export type Tapahtuma = Kastettu | Vihitty | Haudattu;
 
 export interface Lohko {
   seurakunta: { koodi: string; nimi: string };
@@ -98,7 +117,18 @@ const SARAKKEET: Record<HakuKirja, readonly string[]> = {
     "vaimon_kyla",
     "vaimon_talo",
   ],
-  haudatut: [],
+  haudatut: [
+    "kuollut",
+    "haudattu",
+    "kyla",
+    "talo",
+    "henkilo",
+    "kuolinsyy",
+    "ika.vuodet",
+    "ika.kuukaudet",
+    "ika.viikot",
+    "ika.paivat",
+  ],
   smuutt: [],
   umuutt: [],
 };
@@ -213,7 +243,11 @@ function parseTapahtumarivi($: cheerio.CheerioAPI, rivi: Element): Tapahtuma | u
       .filter(Boolean);
     if (kommentit.length > 0) kenttakommentit[kentta] = kommentit;
     const arvo = siisti(solu.text());
-    if (arvo) tapahtuma[kentta] = arvo;
+    if (!arvo) return;
+    // "ika.vuodet" etc. go into a nested object.
+    const [ylempi, alempi] = kentta.split(".");
+    if (alempi) ((tapahtuma[ylempi!] ??= {}) as Record<string, string>)[alempi] = arvo;
+    else tapahtuma[kentta] = arvo;
   });
   if (Object.keys(kenttakommentit).length > 0) tapahtuma.kenttakommentit = kenttakommentit;
   if (kirja === "kastetut") erotaAidinIka(tapahtuma as unknown as Kastettu);
@@ -229,10 +263,21 @@ function erotaAidinIka(tapahtuma: Kastettu) {
   tapahtuma.aidin_ika = osat[2]!;
 }
 
-/** Attaches a comment row ("alkup - ALKUPKOMM: …") to the event above it. */
+/**
+ * Attaches a row printed below an event to it: a comment row
+ * ("alkup - ALKUPKOMM: …") or, for burials, the relative ("omainen: …").
+ */
 function liitaLisarivi($: cheerio.CheerioAPI, rivi: Element, tapahtuma: Tapahtuma) {
   const otsake = $(rivi).find("font").first();
-  const merkinta = /^(\S+) - (.+?):$/.exec(siisti(otsake.text()) ?? "");
+  const otsakkeenTeksti = siisti(otsake.text());
+  if (otsakkeenTeksti === "omainen:" && tapahtuma.kirja === "haudatut") {
+    const ilmanOtsaketta = $(rivi).clone();
+    ilmanOtsaketta.find("font").remove();
+    const omainen = siisti(ilmanOtsaketta.text());
+    if (omainen) tapahtuma.omainen = omainen;
+    return;
+  }
+  const merkinta = /^(\S+) - (.+?):$/.exec(otsakkeenTeksti ?? "");
   const teksti = siisti($(rivi).find("small").first().text());
   if (!merkinta || !teksti) return;
   (tapahtuma.kommentit ??= []).push({ tyyppi: merkinta[1]!, alikentta: merkinta[2]!, teksti });

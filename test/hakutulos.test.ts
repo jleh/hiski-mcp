@@ -182,3 +182,40 @@ describe("parseHakutulos: vihityt", () => {
     });
   });
 });
+
+describe("parseHakutulos: haudatut", () => {
+  const helsinki = jasenna("haku-haudatut-oma.html").lohkot[0]!.tapahtumat;
+  const numerolla = (numero: number) => helsinki.find((t) => t.numero === numero);
+
+  it("parses the columns of a burial with the age split into units", () => {
+    expect(numerolla(9253)).toEqual({
+      kirja: "haudatut",
+      numero: 9253,
+      url: "https://hiski.genealogia.fi/hiski?fi+0084+haudatut+9253",
+      kuollut: "6.1.1800",
+      haudattu: "9.1.1800",
+      henkilo: "Son Carl Gustaf",
+      kuolinsyy: "Slag",
+      ika: { kuukaudet: "2" },
+      omainen: "Borg: Wikström",
+    });
+    expect(numerolla(9254)).toMatchObject({ ika: { vuodet: "2", kuukaudet: "6" } });
+  });
+
+  it("keeps the recorder's own comment", () => {
+    expect(numerolla(9279)!.kommentit).toEqual([
+      { tyyppi: "alkup", alikentta: "OMA", teksti: "Fiskaren Matts Sundbergs Son [kuollut 2/3 1800]" },
+    ]);
+  });
+
+  it("attaches several comment rows to one event", () => {
+    const orimattila = jasenna("haku-haudatut-monta.html").lohkot[1]!;
+    const tapahtuma = orimattila.tapahtumat.find((t) => t.numero === 18729);
+    expect(tapahtuma).toMatchObject({ ika: { kuukaudet: "6" }, kuolinsyy: "Messling" });
+    expect(tapahtuma!.kommentit).toEqual([
+      { tyyppi: "alkup", alikentta: "ALKUPKOMM", teksti: "N" },
+      { tyyppi: "alkup", alikentta: "IKÄKOMM", teksti: "½ år" },
+      { tyyppi: "alkup", alikentta: "TALLKOMM", teksti: "po. G.barn" },
+    ]);
+  });
+});
