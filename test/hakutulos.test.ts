@@ -219,3 +219,38 @@ describe("parseHakutulos: haudatut", () => {
     ]);
   });
 });
+
+describe("parseHakutulos: muuttaneet", () => {
+  it("parses a move into the parish", () => {
+    const [lohko] = jasenna("haku-smuutt.html").lohkot;
+    expect(lohko!.kirja).toBe("smuutt");
+    expect(lohko!.tapahtumat[1]).toEqual({
+      kirja: "smuutt",
+      numero: 1,
+      url: "https://hiski.genealogia.fi/hiski?fi+0015+smuutt+1",
+      saapumispaiva: "6.1.1741",
+      kyla: "Kintula",
+      talo: "Heikkilä t.",
+      henkilo: "Pig. Anna Josephsdr",
+      toinen_paikka: "Hauho",
+      kenttakommentit: { toinen_paikka: ["12.10.40."] },
+      // The empty MUUTKOMM row that follows is left out.
+      kommentit: [{ tyyppi: "alkup", alikentta: "VV", teksti: "\\K2." }],
+    });
+  });
+
+  it("parses a move out of the parish", () => {
+    const [lohko] = jasenna("haku-umuutt.html").lohkot;
+    expect(lohko!.kirja).toBe("umuutt");
+    expect(lohko!.tapahtumat[0]).toEqual({
+      kirja: "umuutt",
+      numero: 0,
+      url: "https://hiski.genealogia.fi/hiski?fi+0015+umuutt+0",
+      lahtopaiva: "26.2.1741",
+      kyla: "Storby",
+      talo: "Tornbergs ?",
+      henkilo: "Drg. Petter Simonsson",
+      toinen_paikka: "Hollola",
+    });
+  });
+});

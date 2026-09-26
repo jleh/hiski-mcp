@@ -68,7 +68,21 @@ export interface Haudattu extends Perus {
   omainen?: string;
 }
 
-export type Tapahtuma = Kastettu | Vihitty | Haudattu;
+/**
+ * A move into (smuutt) or out of (umuutt) the parish. kyla and talo are always
+ * in this parish; toinen_paikka is where the person came from or went to.
+ */
+export interface Muuttanut extends Perus {
+  kirja: "smuutt" | "umuutt";
+  lahtopaiva?: string;
+  saapumispaiva?: string;
+  kyla?: string;
+  talo?: string;
+  henkilo?: string;
+  toinen_paikka?: string;
+}
+
+export type Tapahtuma = Kastettu | Vihitty | Haudattu | Muuttanut;
 
 export interface Lohko {
   seurakunta: { koodi: string; nimi: string };
@@ -104,6 +118,15 @@ const TAULUKKO = /<TABLE BORDER=1[^>]*>[^]*?<\/TABLE>/gi;
 const TAPAHTUMALINKKI = /\/hiski\?fi\+(\d{4})\+([a-z]+)\+(\d+)$/;
 const EI_TIETOKANNASSA = "hakutekstiä ei löydy tietokannasta";
 
+const MUUTON_SARAKKEET = [
+  "lahtopaiva",
+  "saapumispaiva",
+  "kyla",
+  "talo",
+  "henkilo",
+  "toinen_paikka",
+] as const;
+
 /** Which event field each result column holds, per book. */
 const SARAKKEET: Record<HakuKirja, readonly string[]> = {
   kastetut: ["syntynyt", "kastettu", "kyla", "talo", "isa", "aiti", "lapsi"],
@@ -129,8 +152,8 @@ const SARAKKEET: Record<HakuKirja, readonly string[]> = {
     "ika.viikot",
     "ika.paivat",
   ],
-  smuutt: [],
-  umuutt: [],
+  smuutt: MUUTON_SARAKKEET,
+  umuutt: MUUTON_SARAKKEET,
 };
 
 /** A trailing number or range after a person, e.g. the mother's age "25" or "25-30". */
