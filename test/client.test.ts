@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { HiskiClient } from "../src/client.js";
+import { HiskiClient, HiskiVirhe } from "../src/client.js";
 import { FIXTURE_KANSIO } from "./helpers.js";
 
 interface Pyynto {
@@ -207,5 +207,49 @@ describe("HiskiClient.seurakunta", () => {
     const { hiski, pyynnot } = client({ fixture: "seurakunta-tuntematon.html" });
     expect(await hiski.seurakunta("9999")).toEqual({ tila: "ei_loytynyt" });
     expect(pyynnot).toHaveLength(1);
+  });
+});
+
+describe("HiskiClient: errors", () => {
+  const haku = (hiski: HiskiClient, signal?: AbortSignal) =>
+    hiski.haku({ kirja: "kastetut", seurakunnat: ["0366"] }, signal);
+
+  it("reports an HTTP error", async () => {
+    const { hiski } = client({ status: 500 });
+    await expect(haku(hiski)).rejects.toThrow(HiskiVirhe);
+    await expect(haku(client({ status: 502 }).hiski)).rejects.toThrow(/HTTP 502/);
+  });
+
+  it("recognizes Cloudflare's challenge page", async () => {
+    const { hiski } = client({ status: 403, teksti: "<title>Just a moment...</title>" });
+    await expect(haku(hiski)).rejects.toThrow(/Cloudflare/);
+    const mitigoitu = client({ status: 403, headers: { "cf-mitigated": "challenge" } });
+    await expect(haku(mitigoitu.hiski)).rejects.toThrow(/Cloudflare/);
+  });
+
+  /** A fetch that only settles when its signal aborts. */
+  const jumittuva: typeof globalThis.fetch = (_osoite, init) =>
+    new Promise((_ratkaise, hylkaa) => {
+      init?.signal?.addEventListener("abort", () => {
+        hylkaa(init.signal!.reason instanceof Error ? init.signal!.reason : new Error("abort"));
+      });
+    });
+
+  it("gives up after the timeout", async () => {
+    const hiski = new HiskiClient({ fetch: jumittuva, aikakatkaisuMs: 10 });
+    await expect(haku(hiski)).rejects.toThrow(/ei vastannut/);
+  });
+
+  it("keeps a cancellation a cancellation", async () => {
+    const hiski = new HiskiClient({ fetch: jumittuva, aikakatkaisuMs: 60_000 });
+    const peruutus = new AbortController();
+    const tulos = haku(hiski, peruutus.signal);
+    peruutus.abort(new Error("käyttäjä perui"));
+    await expect(tulos).rejects.toThrow("käyttäjä perui");
+  });
+
+  it("reports a network failure", async () => {
+    const fetch: typeof globalThis.fetch = () => Promise.reject(new TypeError("fetch failed"));
+    await expect(haku(new HiskiClient({ fetch }))).rejects.toThrow(/yhteyttä/);
   });
 });

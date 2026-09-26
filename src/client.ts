@@ -25,6 +25,8 @@ export interface ClientAsetukset {
   /** Attempts at an event page, which Hiski intermittently answers with an error page. */
   yrityksia?: number;
   uudelleenyritysMs?: number;
+  /** How long one request may take. */
+  aikakatkaisuMs?: number;
 }
 
 export type TapahtumanHaku =
@@ -51,12 +53,14 @@ export class HiskiClient {
   readonly #odota: (ms: number, signal?: AbortSignal) => Promise<void>;
   readonly #yrityksia: number;
   readonly #uudelleenyritysMs: number;
+  readonly #aikakatkaisuMs: number;
 
   constructor(asetukset: ClientAsetukset = {}) {
     this.#fetch = asetukset.fetch ?? fetch;
     this.#odota = asetukset.odota ?? odota;
     this.#yrityksia = asetukset.yrityksia ?? 5;
     this.#uudelleenyritysMs = asetukset.uudelleenyritysMs ?? 1500;
+    this.#aikakatkaisuMs = asetukset.aikakatkaisuMs ?? 30_000;
   }
 
   /** Runs a search. Throws LomakeVirhe for an invalid request before contacting Hiski. */
@@ -116,11 +120,31 @@ export class HiskiClient {
     return { tila: "ok", sivu, ...(tiedot?.tila === "ok" && { tiedot }) };
   }
 
+  /**
+   * Fetches a page and decodes it. Failures become HiskiVirhe with a message
+   * saying what to do; a cancellation by the caller is passed through as is.
+   */
   async #lataa(url: string, init: RequestInit, signal?: AbortSignal): Promise<string> {
     const headers = new Headers(init.headers);
     headers.set("user-agent", USER_AGENT);
-    const vastaus = await this.#fetch(url, { ...init, headers, signal });
-    return dekoodaa(vastaus.headers.get("content-type"), await vastaus.arrayBuffer());
+    const aikaraja = AbortSignal.timeout(this.#aikakatkaisuMs);
+    const yhdistetty = signal ? AbortSignal.any([signal, aikaraja]) : aikaraja;
+    try {
+      const vastaus = await this.#fetch(url, { ...init, headers, signal: yhdistetty });
+      if (!vastaus.ok) throw await vastausvirhe(vastaus);
+      return dekoodaa(vastaus.headers.get("content-type"), await vastaus.arrayBuffer());
+    } catch (virhe) {
+      signal?.throwIfAborted();
+      if (virhe instanceof HiskiVirhe) throw virhe;
+      if (aikaraja.aborted) {
+        throw new HiskiVirhe("Hiski ei vastannut ajoissa. Yritä hetken kuluttua uudelleen.", {
+          cause: virhe,
+        });
+      }
+      throw new HiskiVirhe("Hiskiin ei saatu yhteyttä. Tarkista verkkoyhteys ja yritä uudelleen.", {
+        cause: virhe,
+      });
+    }
   }
 }
 
@@ -139,6 +163,19 @@ function odota(ms: number, signal?: AbortSignal): Promise<void> {
     }
     signal?.addEventListener("abort", keskeyta, { once: true });
   });
+}
+
+/** Explains a failed response; Cloudflare's bot check gets its own message. */
+async function vastausvirhe(vastaus: Response): Promise<HiskiVirhe> {
+  const teksti = await vastaus.text().catch(() => "");
+  if (vastaus.headers.has("cf-mitigated") || /Just a moment/i.test(teksti)) {
+    return new HiskiVirhe(
+      "Hiskin suojaus (Cloudflare) esti pyynnön. Yritä hetken kuluttua uudelleen.",
+    );
+  }
+  return new HiskiVirhe(
+    `Hiski vastasi virheellä (HTTP ${vastaus.status}). Yritä hetken kuluttua uudelleen.`,
+  );
 }
 
 /** Hiski's own pages are ISO-8859-1 without saying so; others declare a charset. */
