@@ -13,6 +13,10 @@ describe("koodaaLatin1", () => {
     expect(koodaaLatin1([["x", "Åbo Öster"]])).toBe("x=%C5bo+%D6ster");
   });
 
+  it("accepts letters typed in decomposed form (a + combining diaeresis)", () => {
+    expect(koodaaLatin1([["ikyla", "Ba\u0308rnila\u0308"]])).toBe("ikyla=B%E4rnil%E4");
+  });
+
   it("escapes form syntax characters", () => {
     expect(
       koodaaLatin1([

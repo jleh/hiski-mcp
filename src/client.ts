@@ -56,7 +56,8 @@ export class HiskiClient {
   readonly #aikakatkaisuMs: number;
 
   constructor(asetukset: ClientAsetukset = {}) {
-    this.#fetch = asetukset.fetch ?? fetch;
+    // Workers and browsers require fetch to be called without another `this`.
+    this.#fetch = asetukset.fetch ?? ((osoite, init) => fetch(osoite, init));
     this.#odota = asetukset.odota ?? odota;
     this.#yrityksia = asetukset.yrityksia ?? 5;
     this.#uudelleenyritysMs = asetukset.uudelleenyritysMs ?? 1500;

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { HiskiClient, HiskiVirhe } from "../src/client.js";
 import { FIXTURE_KANSIO } from "./helpers.js";
 
@@ -291,5 +291,22 @@ describe("HiskiClient: character sets", () => {
     );
     const tulos = await new HiskiClient({ fetch }).seurakunta("0366");
     expect(tulos.tila === "ok" && tulos.tiedot?.historia).toEqual(["Pöytyä"]);
+  });
+});
+
+describe("HiskiClient: default fetch", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("calls the global fetch as a plain function, as Workers and browsers require", async () => {
+    // Like Cloudflare Workers, refuse to be called as a method of another object.
+    const tavut = readFileSync(FIXTURE_KANSIO + "haku-kastetut-perus.html");
+    vi.stubGlobal("fetch", function (this: unknown) {
+      if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(new Response(tavut));
+    });
+    const tulos = await new HiskiClient().haku({ kirja: "kastetut", seurakunnat: ["0366"] });
+    expect(tulos.lohkot).toHaveLength(1);
   });
 });

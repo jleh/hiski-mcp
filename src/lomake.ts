@@ -60,7 +60,8 @@ export function koodaaLatin1(kentat: [string, string][]): string {
 
 function koodaa(teksti: string): string {
   let tulos = "";
-  for (const merkki of teksti) {
+  // Composed form turns "a" + combining diaeresis into the single latin-1 letter "ä".
+  for (const merkki of teksti.normalize("NFC")) {
     const koodi = merkki.codePointAt(0)!;
     if (merkki === " ") tulos += "+";
     else if (SELLAISENAAN.test(merkki)) tulos += merkki;
