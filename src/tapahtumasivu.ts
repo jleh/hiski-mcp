@@ -12,6 +12,8 @@ interface Yhteiset {
   kommentit?: Kommentti[];
   /** Links Hiski gives for the event, e.g. to the SSHY digital archive image. */
   linkit?: { teksti: string; url: string }[];
+  /** Short comments attached to a single top-level field, keyed by field name. */
+  kenttakommentit?: Record<string, string[]>;
 }
 
 /** A person split into the fields Hiski stores separately. */
@@ -34,7 +36,6 @@ export interface KastetunTiedot extends Yhteiset {
   isa?: Henkilo;
   aiti?: Henkilo;
   lapsi?: string;
-  kenttakommentit?: Record<string, string[]>;
 }
 
 /** A spouse: their home village and farm with the split name. */
@@ -78,7 +79,6 @@ export interface MuuttaneenTiedot extends Yhteiset {
   talo?: string;
   toinen_paikka?: string;
   henkilo?: Henkilo;
-  kenttakommentit?: Record<string, string[]>;
 }
 
 export type TapahtumanTiedot = KastetunTiedot | VihitynTiedot | HaudatunTiedot | MuuttaneenTiedot;
@@ -130,7 +130,8 @@ const IKAYKSIKOT = ["vuodet", "kuukaudet", "viikot", "paivat"] as const;
 /** Reads the cause of death and the age "28 v. - kk - vko - pv" ("-" is empty). */
 const kuolinsyyJaIka: Kasittelija = (tapahtuma, solut) => {
   arvot("kuolinsyy")(tapahtuma, solut);
-  const teksti = solut[1]?.arvo;
+  const { arvo: teksti, kommentit } = solut[1] ?? { kommentit: [] };
+  if (kommentit.length > 0) ((tapahtuma.kenttakommentit ??= {}) as Kentat).ika = kommentit;
   if (!teksti) return;
   const osat = IKA.exec(teksti);
   if (!osat) {
@@ -194,12 +195,14 @@ export function parseTapahtumasivu(html: string): Tapahtumasivu {
 
   const lomake = (nimi: string) => $(`input[name="${nimi}" i]`).attr("value");
   const koodi = lomake("srk");
-  const kirja = lomake("kirja") as HakuKirja | undefined;
+  const kirja = lomake("kirja");
   const nimi = siisti($("h2").first().text());
   const pysyva = $("a")
     .filter((_, a) => /^\/hiski\?fi\+t\d+$/.test($(a).attr("href") ?? ""))
     .attr("href");
-  if (!koodi || !kirja || !nimi || !pysyva) throw new Error("Tapahtumasivua ei tunnistettu");
+  if (!koodi || !onTunnettuKirja(kirja) || !nimi || !pysyva) {
+    throw new Error("Tapahtumasivua ei tunnistettu");
+  }
 
   const rivit = lueRivit($, taulukko);
   const kommentit = [
@@ -230,6 +233,9 @@ export function parseTapahtumasivu(html: string): Tapahtumasivu {
   if (linkit.length > 0) tapahtuma.linkit = linkit;
   return { tila: "ok", tapahtuma: tapahtuma as unknown as TapahtumanTiedot };
 }
+
+const onTunnettuKirja = (kirja: string | undefined): kirja is HakuKirja =>
+  kirja !== undefined && Object.hasOwn(RIVIT, kirja);
 
 /** A cell holding only a <SMALL> heading, e.g. <TD><SMALL>Isä</SMALL>. */
 function onOtsakesolu($: cheerio.CheerioAPI, solu: Element): boolean {

@@ -202,3 +202,35 @@ describe("parseTapahtumasivu: unusual age", () => {
     expect(sivu.tila === "ok" && sivu.tapahtuma).not.toHaveProperty("ika");
   });
 });
+
+describe("parseTapahtumasivu: robustness", () => {
+  const sivu = (kirja: string, rivit: string) =>
+    parseTapahtumasivu(
+      '<H2>Orimattila</H2><A HREF="/hiski?fi+t1">Linkki tähän tapahtumaan</A>' +
+        `<TABLE BORDER=4>${rivit}</TABLE>` +
+        `<FORM><INPUT NAME="srk" VALUE="0366"><INPUT NAME="kirja" VALUE="${kirja}"></FORM>`,
+    );
+
+  it("rejects a book it does not know with a clear error", () => {
+    expect(() => sivu("tilastot", "<TR><TD><SMALL>Lapsi</SMALL> <TD>Maria</TR>")).toThrow(
+      "Tapahtumasivua ei tunnistettu",
+    );
+  });
+
+  it("keeps field comments on the age and other top-level cells", () => {
+    expect(
+      sivu(
+        "haudatut",
+        "<TR><TD><SMALL>Kuolinsyy / Ikä</SMALL> <TD>Slag <SMALL>(?)</SMALL> " +
+          "<TD>28 v. - kk - vko - pv <SMALL>(n.)</SMALL></TR>",
+      ),
+    ).toMatchObject({
+      tila: "ok",
+      tapahtuma: {
+        kuolinsyy: "Slag",
+        ika: { vuodet: "28" },
+        kenttakommentit: { kuolinsyy: ["?"], ika: ["n."] },
+      },
+    });
+  });
+});

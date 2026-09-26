@@ -18,7 +18,7 @@ export function jasennaSolu($: CheerioAPI, solu: Cheerio<Element>): Solu {
   const kommentit = kopio
     .children("small")
     .remove()
-    .map((_, small) => siisti($(small).text())?.replace(/^\((.*)\)$/, "$1"))
+    .map((_, small) => siisti(siisti($(small).text())?.replace(/^\((.*)\)$/, "$1")))
     .get()
     .filter((k): k is string => k !== undefined);
   const arvo = siisti(kopio.text());
