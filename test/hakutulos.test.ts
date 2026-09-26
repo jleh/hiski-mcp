@@ -254,3 +254,20 @@ describe("parseHakutulos: muuttaneet", () => {
     });
   });
 });
+
+describe("parseHakutulos: kaikki", () => {
+  it("splits a search over all books into one block per book", () => {
+    const { lohkot } = jasenna("haku-kaikki.html");
+    expect(
+      lohkot.map((l) => [l.seurakunta.koodi, l.kirja, l.tapahtumat.map((t) => t.numero)]),
+    ).toEqual([
+      ["0366", "kastetut", [18795]],
+      ["0366", "vihityt", [4326]],
+    ]);
+    for (const lohko of lohkot) {
+      expect(lohko.huomautukset).toEqual(["Haetaan vuodet 1834 - 1835"]);
+      expect(lohko.katkaistu).toBe(false);
+    }
+    expect(lohkot[1]!.tapahtumat[0]).toMatchObject({ kirja: "vihityt", mies: "Bonde Värd ungkarl Johan Hansson" });
+  });
+});
