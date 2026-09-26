@@ -91,9 +91,10 @@ Jokainen osa kulkee saman putken läpi:
 
 1. Osalle luodaan oma haara (`osa-1-seurakunnat` jne.) `main`-haarasta.
 2. **TDD**: ensin epäonnistuva testi (vitest punainen) → minimitoteutus (vihreä) → siistiminen. Commitit tehdään pieninä.
-3. **Code review**: `/code-review` ajetaan osan diffille `main`-haaraa vasten (taso medium, eli vain varmoja löydöksiä). Aiheelliset korjaukset tehdään omana commitinaan TDD:llä, eli bugille kirjoitetaan ensin testi. Löydökset, joita en korjaa, perustellaan.
-4. Push ja PR (`gh pr create`). PR:n kuvaukseen tulee tiivistelmä osasta ja katselmoinnin löydöksistä. GitHub Actions -CI:n pitää mennä vihreäksi.
-5. Pysähdyn ja raportoin tilanteen: mitä tehtiin, mitä review löysi ja PR-linkki. Mergeään (`gh pr merge --squash`) vasta, kun olet hyväksynyt osan, tai kun annat luvan jatkaa, ja siirryn sitten seuraavaan osaan.
+3. **Tarkistukset**: `npm run check` (tyyppitarkistus, ESLint, Prettier ja testit) menee läpi.
+4. **Code review**: `/code-review` ajetaan osan diffille `main`-haaraa vasten (taso medium, eli vain varmoja löydöksiä). Aiheelliset korjaukset tehdään omana commitinaan TDD:llä, eli bugille kirjoitetaan ensin testi. Löydökset, joita en korjaa, perustellaan. **Korjausten jälkeen katselmointi ajetaan uudelleen, kunnes löydöksiä ei ole.**
+5. Push ja PR (`gh pr create`). PR:n kuvaukseen tulee tiivistelmä osasta ja katselmoinnin löydöksistä. GitHub Actions -CI:n pitää mennä vihreäksi.
+6. Pysähdyn ja raportoin tilanteen: mitä tehtiin, mitä review löysi ja PR-linkki. Mergeään (`gh pr merge --squash`) vasta, kun olet hyväksynyt osan, tai kun annat luvan jatkaa, ja siirryn sitten seuraavaan osaan.
 
 Poikkeus: osa 0 (repo ja CI) commitoidaan suoraan `main`-haaraan, koska PR-putki syntyy vasta sen myötä.
 
