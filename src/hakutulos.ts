@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
+import { jasennaSolu } from "./solu.js";
 import { siisti } from "./teksti.js";
 
 export const HISKI_URL = "https://hiski.genealogia.fi/hiski";
@@ -256,16 +257,8 @@ function parseTapahtumarivi($: cheerio.CheerioAPI, rivi: Element): Tapahtuma | u
   };
   const kenttakommentit: Record<string, string[]> = {};
   SARAKKEET[kirja].forEach((kentta, i) => {
-    const solu = solut.eq(i).clone();
-    solu.children("a").remove();
-    const kommentit = solu
-      .children("small")
-      .remove()
-      .map((_, small) => siisti($(small).text())?.replace(/^\((.*)\)$/, "$1"))
-      .get()
-      .filter(Boolean);
+    const { arvo, kommentit } = jasennaSolu($, solut.eq(i));
     if (kommentit.length > 0) kenttakommentit[kentta] = kommentit;
-    const arvo = siisti(solu.text());
     if (!arvo) return;
     // "ika.vuodet" etc. go into a nested object.
     const [ylempi, alempi] = kentta.split(".");
