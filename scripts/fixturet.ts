@@ -53,7 +53,13 @@ export const FIXTURET: FixtureMaarittely[] = [
   {
     tiedosto: "haku-kastetut-kommentit.html",
     kuvaus: "kenttäkommentit (oägta), kommentti ennen äidin ikää, alkup-kommenttirivit",
-    pyynto: haku({ srk: "0366", kirja: "kastetut", alkuvuosi: "1850", loppuvuosi: "1850", maxkpl: "30" }),
+    pyynto: haku({
+      srk: "0366",
+      kirja: "kastetut",
+      alkuvuosi: "1850",
+      loppuvuosi: "1850",
+      maxkpl: "30",
+    }),
     merkisto: "latin1",
     sisaltaa: ["<SMALL>(oägta)</SMALL>", "<SMALL>(ei patronyymiä)</SMALL>", "alkup - ALKUPKOMM: "],
   },
@@ -62,7 +68,11 @@ export const FIXTURET: FixtureMaarittely[] = [
     kuvaus: "yhden seurakunnan katkaistu tulos ja jatkohaun hakupos",
     pyynto: haku({ srk: "0366", ...KATKAISTU }),
     merkisto: "latin1",
-    sisaltaa: ["Tapahtumia löytyi noin", "Näytettiin 15 tapahtumaa.", 'name=hakupos type=hidden value="17681"'],
+    sisaltaa: [
+      "Tapahtumia löytyi noin",
+      "Näytettiin 15 tapahtumaa.",
+      'name=hakupos type=hidden value="17681"',
+    ],
   },
   {
     tiedosto: "haku-kastetut-jatko.html",
@@ -88,7 +98,10 @@ export const FIXTURET: FixtureMaarittely[] = [
     kuvaus: "ei tuloksia, ja hakutekstiä ei löydy tietokannasta",
     pyynto: haku({ srk: "0366", kirja: "kastetut", etunimi: "Xyzzyq" }),
     merkisto: "latin1",
-    sisaltaa: ["hakutekstiä ei löydy tietokannasta", "Näillä hakuehdoilla ei löytynyt yhtään tapahtumia."],
+    sisaltaa: [
+      "hakutekstiä ei löydy tietokannasta",
+      "Näillä hakuehdoilla ei löytynyt yhtään tapahtumia.",
+    ],
   },
   {
     tiedosto: "haku-ei-lohkoja.html",
@@ -100,21 +113,39 @@ export const FIXTURET: FixtureMaarittely[] = [
   {
     tiedosto: "haku-vihityt-monta.html",
     kuvaus: "vihityt kahdesta seurakunnasta",
-    pyynto: haku({ srk: "0366,0015", kirja: "vihityt", ...JOHAN_HANSSON, alkuvuosi: "1825", loppuvuosi: "1835" }),
+    pyynto: haku({
+      srk: "0366,0015",
+      kirja: "vihityt",
+      ...JOHAN_HANSSON,
+      alkuvuosi: "1825",
+      loppuvuosi: "1835",
+    }),
     merkisto: "latin1",
     sisaltaa: ["Orimattila - vihityt", "vihityt+4326", "<TH>Kuul. <TH>Vihitty"],
   },
   {
     tiedosto: "haku-haudatut-monta.html",
     kuvaus: "haudatut kahdesta seurakunnasta: ikäsarakkeet ja kommenttirivit",
-    pyynto: haku({ srk: "0366,0015", kirja: "haudatut", ...JOHAN_HANSSON, alkuvuosi: "1850", loppuvuosi: "1860" }),
+    pyynto: haku({
+      srk: "0366,0015",
+      kirja: "haudatut",
+      ...JOHAN_HANSSON,
+      alkuvuosi: "1850",
+      loppuvuosi: "1860",
+    }),
     merkisto: "latin1",
     sisaltaa: ["Artjärvi - Artsjö - haudatut", "haudatut+6681", "alkup - IKÄKOMM: "],
   },
   {
     tiedosto: "haku-haudatut-oma.html",
     kuvaus: "tallentajan oma kommentti (alkup - OMA)",
-    pyynto: haku({ srk: "0084", kirja: "haudatut", alkuvuosi: "1800", loppuvuosi: "1801", maxkpl: "100" }),
+    pyynto: haku({
+      srk: "0084",
+      kirja: "haudatut",
+      alkuvuosi: "1800",
+      loppuvuosi: "1801",
+      maxkpl: "100",
+    }),
     merkisto: "latin1",
     sisaltaa: ["alkup - OMA: "],
   },
@@ -123,7 +154,12 @@ export const FIXTURET: FixtureMaarittely[] = [
     kuvaus: "sisäänmuuttaneet: minne/mistä-sarakkeet ja kohteen kenttäkommentti",
     pyynto: haku({ srk: "0015", kirja: "smuutt", maxkpl: "15" }),
     merkisto: "latin1",
-    sisaltaa: ["sisäänmuuttaneet", "<TH>Lähtöpäivä", "smuutt+1", "Hauho <SMALL>(12.10.40.)</SMALL>"],
+    sisaltaa: [
+      "sisäänmuuttaneet",
+      "<TH>Lähtöpäivä",
+      "smuutt+1",
+      "Hauho <SMALL>(12.10.40.)</SMALL>",
+    ],
   },
   {
     tiedosto: "haku-umuutt.html",
@@ -135,7 +171,13 @@ export const FIXTURET: FixtureMaarittely[] = [
   {
     tiedosto: "haku-kaikki.html",
     kuvaus: "kaikki kirjat: useita alitaulukoita samassa seurakuntalohkossa",
-    pyynto: haku({ srk: "0366", kirja: "kaikki", ...JOHAN_HANSSON, alkuvuosi: "1834", loppuvuosi: "1835" }),
+    pyynto: haku({
+      srk: "0366",
+      kirja: "kaikki",
+      ...JOHAN_HANSSON,
+      alkuvuosi: "1834",
+      loppuvuosi: "1835",
+    }),
     merkisto: "latin1",
     sisaltaa: ["Orimattila - kaikki", "kastetut+18795", "vihityt+4326"],
   },

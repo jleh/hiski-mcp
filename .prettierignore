@@ -1,0 +1,7 @@
+dist
+coverage
+test/fixtures
+# Generated with one parish per line by scripts/paivita-seurakunnat.ts.
+src/data/seurakunnat.json
+# The original project brief, kept as written.
+suunnitelma.md

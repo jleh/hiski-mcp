@@ -64,12 +64,7 @@ export function parseSeurakuntaluettelo(html: string): Seurakunta[] {
 
 /** Lowercases, strips diacritics (ä→a, ö→o, å→a) and collapses whitespace. */
 export function normalisoi(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
+  return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 /** How well a parish matches a query; lower is better. */
@@ -141,11 +136,10 @@ function luokittele(haku: string, seurakunta: Seurakunta): Luokitus | undefined 
 function etsiOsumat(haku: string, lista: readonly Seurakunta[]): Osuma[] {
   const normalisoitu = normalisoi(haku);
   if (!normalisoitu) return [];
-  const osumat = lista
-    .flatMap((seurakunta) => {
-      const luokitus = luokittele(normalisoitu, seurakunta);
-      return luokitus ? [{ seurakunta, ...luokitus }] : [];
-    });
+  const osumat = lista.flatMap((seurakunta) => {
+    const luokitus = luokittele(normalisoitu, seurakunta);
+    return luokitus ? [{ seurakunta, ...luokitus }] : [];
+  });
   // Loose stem matches are only useful when nothing better was found.
   const parempia = osumat.some((o) => o.taso < Taso.Vartalo);
   return osumat
