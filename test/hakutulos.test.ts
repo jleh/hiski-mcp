@@ -291,3 +291,18 @@ describe("parseHakutulos: unusual headings", () => {
     });
   });
 });
+
+describe("parseHakutulos: headless first block", () => {
+  it("keeps the tables Hiski prints before the first parish heading", () => {
+    // Hiski leaves out the first parish's heading in an all-books search over several parishes.
+    const { lohkot, yhteensa } = jasenna("haku-kaikki-monta.html");
+    expect(
+      lohkot.map((l) => [l.seurakunta.koodi, l.seurakunta.nimi, l.kirja, l.tapahtumat.length]),
+    ).toEqual([
+      ["0015", "Artjärvi - Artsjö", "haudatut", 1],
+      ["0366", "Orimattila", "kastetut", 3],
+      ["0366", "Orimattila", "haudatut", 1],
+    ]);
+    expect(yhteensa).toBe(5);
+  });
+});

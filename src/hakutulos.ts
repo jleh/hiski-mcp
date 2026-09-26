@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
+import { SEURAKUNNAT } from "./parishes.js";
 import { jasennaSolu } from "./solu.js";
 import { siisti } from "./teksti.js";
 
@@ -163,23 +164,29 @@ const IKA_LOPUSSA = /^(.*?)\s*\b(\d+(?:-\d+)?)$/;
 /** Parses a Hiski search result page into per-parish, per-book blocks. */
 export function parseHakutulos(html: string): HakuTulos {
   const otsikot = [...html.matchAll(LOHKON_OTSIKKO)];
+  // In an all-books search over several parishes Hiski leaves out the first
+  // parish's heading, so tables before the first heading form a block too.
+  const ennenOtsikoita = parseLohko(undefined, html.slice(0, otsikot[0]?.index ?? html.length));
   const lohkot = otsikot.flatMap((otsikko, i) => {
     const alku = otsikko.index + otsikko[0].length;
     const loppu = otsikot[i + 1]?.index ?? html.length;
-    return parseLohko(otsikko[1]!, html.slice(alku, loppu));
+    return parseLohko(otsikko[1], html.slice(alku, loppu));
   });
   const yhteensa = /Seurakunnista löytyi yhteensä (\d+) tapahtumaa/.exec(html)?.[1];
-  return { lohkot, ...(yhteensa && { yhteensa: Number(yhteensa) }) };
+  return {
+    lohkot: [...ennenOtsikoita, ...lohkot],
+    ...(yhteensa && { yhteensa: Number(yhteensa) }),
+  };
 }
 
 /**
  * One heading may hold several tables: the "kaikki" search prints one per
  * book. Each table becomes its own block.
  */
-function parseLohko(otsikko: string, sisalto: string): Lohko[] {
-  const erotin = otsikko.lastIndexOf(" - ");
-  const nimi = erotin >= 0 ? otsikko.slice(0, erotin) : otsikko;
-  const otsikonKirja = erotin >= 0 ? KIRJAT_OTSIKOSTA[otsikko.slice(erotin + 3)] : undefined;
+function parseLohko(otsikko: string | undefined, sisalto: string): Lohko[] {
+  const erotin = otsikko?.lastIndexOf(" - ") ?? -1;
+  const otsikonNimi = erotin >= 0 ? otsikko!.slice(0, erotin) : otsikko;
+  const otsikonKirja = erotin >= 0 ? KIRJAT_OTSIKOSTA[otsikko!.slice(erotin + 3)] : undefined;
   const { hakutermit, huomautukset } = parseHakutermit(sisalto);
   const taulukot = [...sisalto.matchAll(TAULUKKO)];
   return taulukot.map((taulukko, i) => {
@@ -191,7 +198,11 @@ function parseLohko(otsikko: string, sisalto: string): Lohko[] {
     const kentta = (nimi: string) => lomake(`input[name="${nimi}" i]`).attr("value");
     const kirja = (kentta("kirja") as HakuKirja | undefined) ?? otsikonKirja;
     const koodi = kentta("srk");
-    if (!kirja || !koodi) throw new Error(`Hakutuloksen lohkoa "${otsikko}" ei tunnistettu`);
+    if (!kirja || !koodi) {
+      throw new Error(`Hakutuloksen lohkoa "${otsikko ?? "ilman otsikkoa"}" ei tunnistettu`);
+    }
+    // A block without a heading gets its name from the bundled parish list.
+    const nimi = otsikonNimi ?? SEURAKUNNAT.find((s) => s.koodi === koodi)?.koko_nimi ?? koodi;
     const loytyiNoin = /Tapahtumia löytyi noin (\d+)/.exec(perassa)?.[1];
     const jatkokohta = kentta("hakupos");
     return {
