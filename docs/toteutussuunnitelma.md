@@ -30,14 +30,15 @@ src/
   client.ts             # HTTP: haku (POST), tapahtuma (GET), latin-1, User-Agent, timeout
   parser.ts             # hakutulos-HTML → seurakuntalohkot → rivit; tapahtumasivu → kentät
   parishes.ts           # seurakuntalista + sumea nimihaku
-  seurakunnat.ts        # generoitu/upotettu data seurakunnat.txt:stä (ei tiedostoluvun polkuongelmia paketissa)
+  data/seurakunnat.json # generoitu data: kokonaiset nimet + indeksoidut vuodet kirjoittain (scripts/paivita-seurakunnat.ts)
 test/
   fixtures/*.html       # tallennetut oikeat vastaukset
   *.test.ts
 ```
 
 ## MCP-työkalut
-1. **`etsi_seurakunta(nimi)`**: palauttaa koodit ja nimet. Haku osittaisella nimellä, kirjainkoolla ja diakriiteillä ei ole väliä, ja ruotsinkielinen nimi käy myös ("Artsjö").
+1. **`etsi_seurakunta(nimi)`**: palauttaa koodit, nimet ja kunkin kirjan indeksoidut vuodet (paikallisesta datasta, ei verkkokutsua). Haku osittaisella nimellä, kirjainkoolla ja diakriiteillä ei ole väliä, ja ruotsinkielinen nimi käy myös ("Artsjö"). Genetiivimuodot ("Turku" → "Turun …") löytyvät ehdokkaina.
+   - *Toteutuksessa (osa 1) muutettu:* `seurakunnat.txt`:n nimet on katkaistu 35 merkkiin, joten data haetaan Hiskin kirjaluettelosta, jossa kaikki seurakunnat on valittu kerralla. Siitä saadaan kokonaiset nimet ja vuosikattavuus. Skripti `npm run paivita-seurakunnat` päivittää datan ja testifixturen.
 2. **`hae_kastetut(seurakunnat, lapsen_etunimi?, alkuvuosi?, loppuvuosi?, kyla?, isan_{etunimi,patronyymi,sukunimi,ammatti}?, aidin_…?, maksimi=50)`**
 3. **`hae_vihityt(seurakunnat, alkuvuosi?, loppuvuosi?, miehen_{etunimi,patronyymi,sukunimi,ammatti,paikka}?, vaimon_…?, maksimi=50)`**
 4. **`hae_haudatut(seurakunnat, alkuvuosi?, loppuvuosi?, {etunimi,patronyymi,sukunimi,ammatti,paikka,kuolinsyy}?, syntyma_alku?, syntyma_loppu?, ika?, omaisen_{etunimi,patronyymi,sukunimi,ammatti}?, maksimi=50)`**. `sukulaissuhde` jätetään pois, koska ohjeiden mukaan sitä ei ole kirjattu tietokantaan ja hakuehtona se on turha.
@@ -84,7 +85,7 @@ Jokainen osa kulkee saman putken läpi:
 
 Poikkeus: osa 0 (repo ja CI) commitoidaan suoraan `main`-haaraan, koska PR-putki syntyy vasta sen myötä.
 
-0. **Repo, runko ja CI**: `git init` (haara `main`), `.gitignore`, `package.json`, `tsconfig.json`, vitest ja yksi savutesti, joka menee läpi. Lisäksi `.github/workflows/ci.yml`, joka ajetaan pushissa ja PR:ssä: `npm ci` → `tsc --noEmit` → `npm test` → `npm run build`, Node 20 ja 22. Commit (mukana myös suunnitelma.md ja seurakunnat.txt). Sen jälkeen `gh repo create jleh/hiski-mcp --public --source . --push` ja tarkistus, että CI menee vihreäksi (`gh run watch`). Lisäksi `main`-haaralle asetetaan suojaus, joka vaatii vihreän CI:n ennen mergeä (`gh api` branch protection, jos julkinen repo sen sallii).
+0. **Repo, runko ja CI**: `git init` (haara `main`), `.gitignore`, `package.json`, `tsconfig.json`, vitest ja yksi savutesti, joka menee läpi. Lisäksi `.github/workflows/ci.yml`, joka ajetaan pushissa ja PR:ssä: `npm ci` → `tsc --noEmit` → `npm test` → `npm run build`, Node 22 ja 24 (Node 20 on EOL, vitest 5 vaatii ≥ 22). Commit (mukana myös suunnitelma.md ja seurakunnat.txt). Sen jälkeen `gh repo create jleh/hiski-mcp --public --source . --push` ja tarkistus, että CI menee vihreäksi (`gh run watch`). Lisäksi `main`-haaralle asetetaan suojaus, joka vaatii vihreän CI:n ennen mergeä (`gh api` branch protection, jos julkinen repo sen sallii).
 1. **Seurakunnat** (`parishes.ts`): ensin testit tiedoston jäsennykselle (539 kpl), koodihaulle, osittaiselle nimihaulle (kirjainkoko, diakriitit, ruotsinkielinen nimi), epäselvän nimen virheelle ehdokkaineen ja koodi/nimi-listan ratkaisulle. Commit.
 2. **Fixturet**: tallennetaan curlilla oikeat vastaukset kansioon `test/fixtures/` (kastetut-esimerkki, vihityt 0366+0015, haudatut 0366+0015, tapahtuma 0366/kastetut/18795, kirjaluettelo 0366, mini-pgsql 366, yksi pienempi seurakunta, jolta puuttuu osioita, katkaistu tulos (esim. kastetut Johan, `maksimi` 15), tulos kenttäkohtaisilla sulkukommenteilla, smuutt ja umuutt 0015, kaikki 0366 Johan Hansson 1834–1835 sekä tyhjä tulos). Katkaistun tuloksen yhteydessä selvitetään "Jatka hakua" -lomakkeen parametrit. Commit.
 3. **Hakutulosten parseri**: kullekin kirjalle ensin testit lohkojaolle, hakutermeille, sarakkeille, tapahtumanumerolle, kommenttiriveille (alkup/oma + alikenttä), sulkukommenteille, äidin iälle, `katkaistu`-tiedolle, lukumäärille ja tyhjälle tulokselle. Parseri rakennetaan niin, että rivin kirja päätellään linkistä (`/hiski?fi+SRK+KIRJA+N`) ja rivi jäsennetään kirjakohtaisella mappauksella. Näin sama koodi toimii myös `kaikki`-haun sekataulukoille. Commit kirja kerrallaan (kastetut → vihityt → haudatut → smuutt/umuutt → kaikki).
