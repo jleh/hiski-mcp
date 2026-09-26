@@ -1,0 +1,34 @@
+{
+  "name": "hiski-mcp",
+  "version": "0.0.0",
+  "description": "MCP-palvelin Suomen Sukututkimusseuran HisKi-historiakirjatietokannan hakuihin",
+  "type": "module",
+  "bin": {
+    "hiski-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "mcp",
+    "genealogy",
+    "sukututkimus",
+    "hiski"
+  ],
+  "author": "Juuso Lehtinen",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}
