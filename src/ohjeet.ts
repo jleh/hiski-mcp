@@ -5,7 +5,7 @@
 export const OHJEET = `HisKi on Suomen Sukututkimusseuran tietokanta, johon on tallennettu seurakuntien historiakirjojen tapahtumia: kastetut, vihityt, haudatut sekä sisään- ja poismuuttaneet. Tiedot ovat alkuperäisessä kirjoitusasussa, usein ruotsiksi.
 
 Aineiston rajat:
-- Tietoja ei ole ennen vuotta 1648 eikä 1900-luvulta, ja näkyvissä ovat vain yli 100 vuotta vanhat tapahtumat. Kunkin seurakunnan ja kirjan indeksoidut vuodet kertovat etsi_seurakunta ja seurakunnan_tiedot; aineisto voi olla vajaa niidenkin sisällä.
+- Aineisto ulottuu 1600-luvulta monessa seurakunnassa 1900-luvun alkupuolelle, mutta näkyvissä ovat vain yli 100 vuotta vanhat tapahtumat. Kunkin seurakunnan ja kirjan indeksoidut vuodet kertovat etsi_seurakunta ja seurakunnan_tiedot; aineisto voi olla vajaa niidenkin sisällä.
 - Tyhjä tulos ei todista, ettei tapahtumaa ole. Silloin voi kokeilla toista kirjoitusasua, naapuriseurakuntia (seurakunnan_tiedot), emäseurakuntaa tai toista kirjaa (esim. vihityt, kun kastetta ei löydy).
 - Luovutetun Karjalan seurakuntien historiakirjat on pääosin tallennettu Karjala-tietokantasäätiön tietokantaan (karjalatk.fi), ei Hiskiin.
 - Tallennuksessa voi olla virheitä; löydöt kannattaa tarkistaa alkuperäislähteestä (SSHY-digiarkiston linkki hae_tapahtuma-tuloksessa).

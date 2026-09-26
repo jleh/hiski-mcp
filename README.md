@@ -38,7 +38,7 @@ Tarvitset [Claude Desktop](https://claude.ai/download) -sovelluksen. Muuta ei ta
 
 ## Hyvä tietää
 
-- **Aineiston rajat:** Hiskissä on tapahtumia 1600-luvun puolivälistä 1900-luvun alkuun, ja näkyvissä on vain yli 100 vuotta vanhoja tapahtumia. Kunkin seurakunnan vuodet vaihtelevat, ja Claude voi tarkistaa ne. Tyhjä tulos ei tarkoita, ettei tapahtumaa olisi ollut: se voi olla kirjassa, jota ei ole tallennettu, toisessa seurakunnassa tai eri kirjoitusasulla.
+- **Aineiston rajat:** Hiskissä on tapahtumia 1600-luvulta monessa seurakunnassa 1900-luvun alkupuolelle, ja näkyvissä on vain yli 100 vuotta vanhoja tapahtumia. Kunkin seurakunnan vuodet vaihtelevat, ja Claude voi tarkistaa ne. Tyhjä tulos ei tarkoita, ettei tapahtumaa olisi ollut: se voi olla kirjassa, jota ei ole tallennettu, toisessa seurakunnassa tai eri kirjoitusasulla.
 - **Tiedoissa voi olla virheitä.** Tarkista tärkeät tiedot alkuperäisestä kirkonkirjasta (digiarkiston linkki).
 - **Luovutettu Karjala:** näiden seurakuntien kirjat on pääosin tallennettu [Karjala-tietokantaan](http://www.karjalatk.fi/), ei Hiskiin.
 - **Hiskiä kunnioittaen:** haut tehdään omalta koneeltasi suoraan HisKi-palveluun, jota ylläpidetään vapaaehtoisvoimin. Vältä valtavia massahakuja.
