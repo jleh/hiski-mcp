@@ -66,7 +66,22 @@ export interface HaudatunTiedot extends Yhteiset {
   omainen?: Henkilo & { lisatieto?: string };
 }
 
-export type TapahtumanTiedot = KastetunTiedot | VihitynTiedot | HaudatunTiedot;
+/**
+ * A move into (smuutt) or out of (umuutt) the parish. kyla and talo are always
+ * in this parish; toinen_paikka is where the person came from or went to.
+ */
+export interface MuuttaneenTiedot extends Yhteiset {
+  kirja: "smuutt" | "umuutt";
+  lahtopaiva?: string;
+  saapumispaiva?: string;
+  kyla?: string;
+  talo?: string;
+  toinen_paikka?: string;
+  henkilo?: Henkilo;
+  kenttakommentit?: Record<string, string[]>;
+}
+
+export type TapahtumanTiedot = KastetunTiedot | VihitynTiedot | HaudatunTiedot | MuuttaneenTiedot;
 
 export type Tapahtumasivu =
   | { tila: "ok"; tapahtuma: TapahtumanTiedot }
@@ -154,8 +169,20 @@ const RIVIT: Record<HakuKirja, Record<string, Kasittelija>> = {
     Omainen: henkilo("omainen"),
     "Omainen › jatko": arvot("omainen.lisatieto"),
   },
-  smuutt: {},
-  umuutt: {},
+  // The headings name the direction: this parish is "Minne" for a move in
+  // and "Mistä" for a move out.
+  smuutt: {
+    "Lähtöpäivä / Saapumispäivä": arvot("lahtopaiva", "saapumispaiva"),
+    "Minne: Kylä / Talo": arvot("kyla", "talo"),
+    Mistä: arvot("toinen_paikka"),
+    Henkilö: henkilo("henkilo"),
+  },
+  umuutt: {
+    "Lähtöpäivä / Saapumispäivä": arvot("lahtopaiva", "saapumispaiva"),
+    "Mistä: Kylä / Talo": arvot("kyla", "talo"),
+    Minne: arvot("toinen_paikka"),
+    Henkilö: henkilo("henkilo"),
+  },
 };
 
 /** Parses a Hiski event page (/hiski?fi+SRK+KIRJA+N). */

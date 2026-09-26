@@ -157,3 +157,48 @@ describe("parseTapahtumasivu: haudatut", () => {
     ]);
   });
 });
+
+describe("parseTapahtumasivu: muuttaneet", () => {
+  it("reads a move into the parish", () => {
+    const muutto = tapahtuma("tapahtuma-smuutt.html");
+    expect(muutto).toMatchObject({
+      kirja: "smuutt",
+      saapumispaiva: "6.1.1741",
+      kyla: "Kintula",
+      talo: "Heikkilä t.",
+      toinen_paikka: "Hauho",
+      kenttakommentit: { toinen_paikka: ["12.10.40."] },
+      henkilo: { ammatti: "Pig.", etunimi: "Anna", patronyymi: "Josephsdr" },
+      // The empty MUUTKOMM is left out.
+      kommentit: [{ tyyppi: "alkup", alikentta: "VV", teksti: "\\K2." }],
+    });
+    expect(muutto).not.toHaveProperty("lahtopaiva");
+  });
+
+  it("reads a move out of the parish with the headings reversed", () => {
+    expect(tapahtuma("tapahtuma-umuutt.html")).toMatchObject({
+      seurakunta: { koodi: "0003", nimi: "Akaa" },
+      kirja: "umuutt",
+      lahtopaiva: "29.9.1806",
+      kyla: "Viala",
+      toinen_paikka: "Tavastehus",
+      henkilo: { ammatti: "Pig.", etunimi: "Maria", patronyymi: "Johansdr." },
+      kommentit: [{ tyyppi: "alkup", alikentta: "ALKUPKOMM", teksti: "föd. 15.6.1780." }],
+    });
+  });
+});
+
+describe("parseTapahtumasivu: unusual age", () => {
+  it("keeps an age that is not in the usual form as text", () => {
+    const html =
+      '<H2>Orimattila</H2><A HREF="/hiski?fi+t1">Linkki tähän tapahtumaan</A>' +
+      "<TABLE BORDER=4><TR><TD><SMALL>Kuolinsyy / Ikä</SMALL> <TD COLSPAN=2>Slag <TD COLSPAN=2>½ år</TR></TABLE>" +
+      '<FORM><INPUT NAME="srk" VALUE="0366"><INPUT NAME="kirja" VALUE="haudatut"></FORM>';
+    const sivu = parseTapahtumasivu(html);
+    expect(sivu).toMatchObject({
+      tila: "ok",
+      tapahtuma: { kuolinsyy: "Slag", ika_teksti: "½ år" },
+    });
+    expect(sivu.tila === "ok" && sivu.tapahtuma).not.toHaveProperty("ika");
+  });
+});
