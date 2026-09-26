@@ -182,6 +182,21 @@ export const FIXTURET: FixtureMaarittely[] = [
     sisaltaa: ["Orimattila - kaikki", "kastetut+18795", "vihityt+4326"],
   },
   {
+    tiedosto: "haku-kaikki-monta.html",
+    kuvaus:
+      "kaikki kirjat kahdesta seurakunnasta: Hiski jättää ensimmäisen seurakunnan otsikon pois",
+    pyynto: haku({
+      srk: "0015,0366",
+      kirja: "kaikki",
+      ...JOHAN_HANSSON,
+      alkuvuosi: "1850",
+      loppuvuosi: "1855",
+      maxkpl: "15",
+    }),
+    merkisto: "latin1",
+    sisaltaa: ["fi+0015+haudatut+6681", "Orimattila - kaikki"],
+  },
+  {
     tiedosto: "tapahtuma-kastetut.html",
     kuvaus: "kastetun tapahtumasivu",
     pyynto: { kysely: "fi+0366+kastetut+18795" },
