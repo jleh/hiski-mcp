@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "paivita-seurakunnat": "tsx scripts/paivita-seurakunnat.ts"
+    "paivita-seurakunnat": "tsx scripts/paivita-seurakunnat.ts",
+    "tallenna-fixturet": "tsx scripts/tallenna-fixturet.ts"
   },
   "keywords": [
     "mcp",

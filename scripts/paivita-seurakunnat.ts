@@ -8,7 +8,7 @@
  * Usage: npm run paivita-seurakunnat
  */
 import { writeFileSync } from "node:fs";
-import { decodeLatin1, poistaCloudflareSkripti } from "../src/encoding.js";
+import { decodeLatin1, poistaCloudflareLisaykset } from "../src/encoding.js";
 import { parseSeurakuntaluettelo } from "../src/parishes.js";
 
 const HISKI = "https://hiski.genealogia.fi/hiski";
@@ -36,5 +36,5 @@ if (seurakunnat.length !== koodit.length) {
 // One parish per line keeps the file compact and its diffs readable.
 writeFileSync(KOHDE, `[\n${seurakunnat.map((s) => JSON.stringify(s)).join(",\n")}\n]\n`);
 // The raw page doubles as the test fixture that guards the data above.
-writeFileSync(FIXTURE, poistaCloudflareSkripti(luettelo));
+writeFileSync(FIXTURE, poistaCloudflareLisaykset(luettelo));
 console.log(`Kirjoitettiin ${seurakunnat.length} seurakuntaa: ${KOHDE.pathname}`);
