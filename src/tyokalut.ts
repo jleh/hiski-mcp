@@ -267,7 +267,12 @@ export const TYOKALUT: Tyokalu[] = [
       ...henkilo("vaimon_", "Vaimon"),
       vaimon_paikka: paikka("Vaimon asuinkylä tai -talo."),
     },
-    kasittele: eiVielaToteutettu,
+    kasittele: haku("vihityt", {
+      ...henkilonKentat("miehen_", "i"),
+      miehen_paikka: "ikyla",
+      ...henkilonKentat("vaimon_", "a"),
+      vaimon_paikka: "akyla",
+    }),
   }),
   tyokalu({
     nimi: "hae_haudatut",
@@ -287,7 +292,15 @@ export const TYOKALUT: Tyokalu[] = [
       ika: z.string().optional().describe("Vainajan ikä vuosina."),
       ...henkilo("omaisen_", "Omaisen"),
     },
-    kasittele: eiVielaToteutettu,
+    kasittele: haku("haudatut", {
+      ...henkilonKentat("", "i"),
+      paikka: "ikyla",
+      kuolinsyy: "ksyy",
+      syntyma_alku: "syntalku",
+      syntyma_loppu: "syntloppu",
+      ika: "ika",
+      ...henkilonKentat("omaisen_", "a"),
+    }),
   }),
   tyokalu({
     nimi: "hae_muuttaneet",
@@ -306,7 +319,11 @@ export const TYOKALUT: Tyokalu[] = [
         .optional()
         .describe("Paikka tai seurakunta, josta muutettiin (sisään) tai johon muutettiin (pois)."),
     },
-    kasittele: eiVielaToteutettu,
+    kasittele: haku((args) => (args.suunta === "pois" ? "umuutt" : "smuutt"), {
+      ...henkilonKentat("", "i"),
+      kyla: "ikyla",
+      toinen_paikka: "kohde",
+    }),
   }),
   tyokalu({
     nimi: "hae_kaikki",
@@ -326,7 +343,12 @@ export const TYOKALUT: Tyokalu[] = [
         .optional()
         .describe("Vapaa teksti, jota tapahtuma ei saa sisältää."),
     },
-    kasittele: eiVielaToteutettu,
+    kasittele: haku("kaikki", {
+      ...henkilonKentat("", "i"),
+      paikka: "ikyla",
+      sisaltaa_tekstin: "vapaaAND",
+      ei_sisalla_tekstia: "vapaaNOT",
+    }),
   }),
   tyokalu({
     nimi: "hae_tapahtuma",

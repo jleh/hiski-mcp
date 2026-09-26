@@ -134,3 +134,146 @@ describe("hae_kastetut", () => {
     expect(pyynnot).toHaveLength(0);
   });
 });
+
+describe("hae_vihityt", () => {
+  it("maps both spouses' fields", async () => {
+    const { asiakas, pyynnot } = await yhdista({ fixture: "haku-vihityt-monta.html" });
+    const { json } = await kutsu(asiakas, "hae_vihityt", {
+      seurakunnat: ["0366", "0015"],
+      miehen_etunimi: "Johan",
+      miehen_patronyymi: "Hansson",
+      miehen_sukunimi: "S",
+      miehen_ammatti: "Bonde",
+      miehen_paikka: "Niemi",
+      vaimon_etunimi: "Otteliana",
+      vaimon_patronyymi: "Anders",
+      vaimon_sukunimi: "T",
+      vaimon_ammatti: "Piga",
+      vaimon_paikka: "Kuivanto",
+    });
+    expect(kentat(pyynnot[0])).toMatchObject({
+      kirja: "vihityt",
+      srk: "0366,0015",
+      ietunimi: "Johan",
+      ipatronyymi: "Hansson",
+      isukunimi: "S",
+      iammatti: "Bonde",
+      ikyla: "Niemi",
+      aetunimi: "Otteliana",
+      apatronyymi: "Anders",
+      asukunimi: "T",
+      aammatti: "Piga",
+      akyla: "Kuivanto",
+    });
+    expect((json as Tulos).lohkot.map((l) => l.tapahtumat.length)).toEqual([0, 2]);
+  });
+});
+
+describe("hae_haudatut", () => {
+  it("maps the deceased's, relative's and burial fields", async () => {
+    const { asiakas, pyynnot } = await yhdista({ fixture: "haku-haudatut-monta.html" });
+    await kutsu(asiakas, "hae_haudatut", {
+      seurakunnat: ["0366", "0015"],
+      etunimi: "Johan",
+      patronyymi: "Hansson",
+      sukunimi: "S",
+      ammatti: "Dreng",
+      paikka: "Hetana",
+      kuolinsyy: "Bukref",
+      syntyma_alku: "1820",
+      syntyma_loppu: "12.1830",
+      ika: "28",
+      omaisen_etunimi: "Maria",
+      omaisen_patronyymi: "Eriksdr",
+      omaisen_sukunimi: "K",
+      omaisen_ammatti: "Hustru",
+    });
+    expect(kentat(pyynnot[0])).toMatchObject({
+      kirja: "haudatut",
+      ietunimi: "Johan",
+      ipatronyymi: "Hansson",
+      isukunimi: "S",
+      iammatti: "Dreng",
+      ikyla: "Hetana",
+      ksyy: "Bukref",
+      syntalku: "1820",
+      syntloppu: "12.1830",
+      ika: "28",
+      aetunimi: "Maria",
+      apatronyymi: "Eriksdr",
+      asukunimi: "K",
+      aammatti: "Hustru",
+    });
+  });
+});
+
+describe("hae_muuttaneet", () => {
+  it("searches moves into the parish", async () => {
+    const { asiakas, pyynnot } = await yhdista({ fixture: "haku-smuutt.html" });
+    const { json } = await kutsu(asiakas, "hae_muuttaneet", {
+      seurakunnat: ["Artjärvi"],
+      suunta: "sisaan",
+      etunimi: "Anna",
+      patronyymi: "Josephsdr",
+      sukunimi: "S",
+      ammatti: "Pig",
+      kyla: "Kintula",
+      toinen_paikka: "Hauho",
+    });
+    expect(kentat(pyynnot[0])).toMatchObject({
+      kirja: "smuutt",
+      ietunimi: "Anna",
+      ipatronyymi: "Josephsdr",
+      isukunimi: "S",
+      iammatti: "Pig",
+      ikyla: "Kintula",
+      kohde: "Hauho",
+    });
+    expect((json as Tulos).lohkot[0]!.kirja).toBe("smuutt");
+  });
+
+  it("searches moves out of the parish", async () => {
+    const { asiakas, pyynnot } = await yhdista({ fixture: "haku-umuutt.html" });
+    await kutsu(asiakas, "hae_muuttaneet", { seurakunnat: ["0015"], suunta: "pois" });
+    expect(kentat(pyynnot[0])).toMatchObject({ kirja: "umuutt" });
+  });
+
+  it("tells when the parish has no migration records", async () => {
+    const { asiakas } = await yhdista({ fixture: "haku-ei-lohkoja.html" });
+    const { virhe, json } = await kutsu(asiakas, "hae_muuttaneet", {
+      seurakunnat: ["Orimattila"],
+      suunta: "sisaan",
+    });
+    expect(virhe).toBe(false);
+    expect((json as Tulos).huomautukset).toEqual([
+      "Seurakunnalla Orimattila (0366) ei ole Hiskissä kirjaa sisäänmuuttaneet.",
+    ]);
+  });
+});
+
+describe("hae_kaikki", () => {
+  it("maps the person's fields and the free text", async () => {
+    const { asiakas, pyynnot } = await yhdista({ fixture: "haku-kaikki.html" });
+    const { json } = await kutsu(asiakas, "hae_kaikki", {
+      seurakunnat: ["0366"],
+      etunimi: "Johan",
+      patronyymi: "Hansson",
+      sukunimi: "S",
+      ammatti: "Bonde",
+      paikka: "Niemi",
+      sisaltaa_tekstin: "Bonde",
+      ei_sisalla_tekstia: "Torp",
+    });
+    expect(kentat(pyynnot[0])).toMatchObject({
+      kirja: "kaikki",
+      ietunimi: "Johan",
+      ipatronyymi: "Hansson",
+      isukunimi: "S",
+      iammatti: "Bonde",
+      ikyla: "Niemi",
+      vapaaAND: "Bonde",
+      vapaaNOT: "Torp",
+    });
+    expect((json as Tulos).lohkot.map((l) => l.kirja)).toEqual(["kastetut", "vihityt"]);
+  });
+});
