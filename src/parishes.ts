@@ -85,6 +85,8 @@ enum Taso {
 interface Osuma {
   seurakunta: Seurakunta;
   taso: Taso;
+  /** Orders stem matches: how far the closest name words are from the query. */
+  etaisyys: number;
 }
 
 const sanat = (s: string) => s.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
@@ -102,21 +104,37 @@ const yhteinenAlku = (a: string, b: string) => {
 const vartaloTasmaa = (hakusana: string, nimisana: string) =>
   yhteinenAlku(hakusana, nimisana) >= Math.max(3, hakusana.length - 3);
 
-function luokittele(haku: string, seurakunta: Seurakunta): Taso | undefined {
+/** Smaller when name words share a longer beginning and a similar length. */
+function vartaloEtaisyys(hakusanat: string[], nimisanat: string[]): number {
+  let summa = 0;
+  for (const h of hakusanat) {
+    summa += Math.min(
+      ...nimisanat.map((n) => h.length - yhteinenAlku(h, n) + Math.abs(h.length - n.length)),
+    );
+  }
+  return summa;
+}
+
+type Luokitus = Pick<Osuma, "taso" | "etaisyys">;
+
+function luokittele(haku: string, seurakunta: Seurakunta): Luokitus | undefined {
+  const taso = (t: Taso): Luokitus => ({ taso: t, etaisyys: 0 });
   if (/^\d{1,4}$/.test(haku)) {
-    return haku.padStart(4, "0") === seurakunta.koodi ? Taso.Koodi : undefined;
+    return haku.padStart(4, "0") === seurakunta.koodi ? taso(Taso.Koodi) : undefined;
   }
   const nimet = [seurakunta.nimi, seurakunta.rinnakkaisnimi, seurakunta.koko_nimi]
     .filter((n): n is string => n !== undefined)
     .map(normalisoi);
-  if (nimet.some((n) => n === haku)) return Taso.Tasmaa;
-  if (nimet.some((n) => n.startsWith(haku))) return Taso.Alkaa;
+  if (nimet.some((n) => n === haku)) return taso(Taso.Tasmaa);
+  if (nimet.some((n) => n.startsWith(haku))) return taso(Taso.Alkaa);
   const nimisanat = sanat(nimet.join(" "));
   const hakusanat = sanat(haku);
   if (hakusanat.length === 0) return undefined;
-  if (hakusanat.every((h) => nimisanat.some((n) => n.startsWith(h)))) return Taso.SananAlku;
-  if (nimet.some((n) => n.includes(haku))) return Taso.Sisaltaa;
-  if (hakusanat.every((h) => nimisanat.some((n) => vartaloTasmaa(h, n)))) return Taso.Vartalo;
+  if (hakusanat.every((h) => nimisanat.some((n) => n.startsWith(h)))) return taso(Taso.SananAlku);
+  if (nimet.some((n) => n.includes(haku))) return taso(Taso.Sisaltaa);
+  if (hakusanat.every((h) => nimisanat.some((n) => vartaloTasmaa(h, n)))) {
+    return { taso: Taso.Vartalo, etaisyys: vartaloEtaisyys(hakusanat, nimisanat) };
+  }
   return undefined;
 }
 
@@ -124,13 +142,20 @@ function etsiOsumat(haku: string, lista: readonly Seurakunta[]): Osuma[] {
   const normalisoitu = normalisoi(haku);
   if (!normalisoitu) return [];
   const osumat = lista
-    .map((seurakunta) => ({ seurakunta, taso: luokittele(normalisoitu, seurakunta) }))
-    .filter((o): o is Osuma => o.taso !== undefined);
+    .flatMap((seurakunta) => {
+      const luokitus = luokittele(normalisoitu, seurakunta);
+      return luokitus ? [{ seurakunta, ...luokitus }] : [];
+    });
   // Loose stem matches are only useful when nothing better was found.
   const parempia = osumat.some((o) => o.taso < Taso.Vartalo);
   return osumat
     .filter((o) => !parempia || o.taso < Taso.Vartalo)
-    .sort((a, b) => a.taso - b.taso || a.seurakunta.nimi.localeCompare(b.seurakunta.nimi, "fi"));
+    .sort(
+      (a, b) =>
+        a.taso - b.taso ||
+        a.etaisyys - b.etaisyys ||
+        a.seurakunta.nimi.localeCompare(b.seurakunta.nimi, "fi"),
+    );
 }
 
 /** Finds parishes by code, name or parallel name, best matches first. */

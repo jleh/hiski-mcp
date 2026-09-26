@@ -8,7 +8,7 @@
  * Usage: npm run paivita-seurakunnat
  */
 import { writeFileSync } from "node:fs";
-import { decodeLatin1 } from "../src/encoding.js";
+import { decodeLatin1, poistaCloudflareSkripti } from "../src/encoding.js";
 import { parseSeurakuntaluettelo } from "../src/parishes.js";
 
 const HISKI = "https://hiski.genealogia.fi/hiski";
@@ -36,8 +36,5 @@ if (seurakunnat.length !== koodit.length) {
 // One parish per line keeps the file compact and its diffs readable.
 writeFileSync(KOHDE, `[\n${seurakunnat.map((s) => JSON.stringify(s)).join(",\n")}\n]\n`);
 // The raw page doubles as the test fixture that guards the data above.
-// Cloudflare's injected script carries a per-request id; drop it so that
-// rerunning the script only changes the fixture when the content changes.
-const ilmanCloudflarea = decodeLatin1(luettelo).replace(/<script>[^<]*__CF\$cv\$params[^]*?<\/script>/, "");
-writeFileSync(FIXTURE, Buffer.from(ilmanCloudflarea, "latin1"));
+writeFileSync(FIXTURE, poistaCloudflareSkripti(luettelo));
 console.log(`Kirjoitettiin ${seurakunnat.length} seurakuntaa: ${KOHDE.pathname}`);

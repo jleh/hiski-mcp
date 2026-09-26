@@ -139,6 +139,11 @@ describe("etsiSeurakunta", () => {
     expect(koodit("Turku")).toEqual(expect.arrayContaining(["0566", "0569"]));
   });
 
+  it("ranks closer stem matches first", () => {
+    // "Turun" is a closer stem of "Turku" than the unrelated "Turtola".
+    expect(koodit("Turku").at(-1)).toBe("0561");
+  });
+
   it("returns nothing for unknown names", () => {
     expect(koodit("xyzzy")).toEqual([]);
     expect(koodit("   ")).toEqual([]);
