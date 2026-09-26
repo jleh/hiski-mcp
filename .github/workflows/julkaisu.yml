@@ -39,11 +39,8 @@ jobs:
       - run: npm run paketoi
       - run: npm run testaa-paketti
 
-      - name: GitHub Release ja .mcpb-paketti
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" hiski-mcp.mcpb --title "$GITHUB_REF_NAME" --generate-notes
-
+      # npm first: if it fails, a re-run can still create the release, and
+      # both steps skip what already exists, so the job can always be re-run.
       - name: Julkaise npm:ään
         run: |
           versio="$(node -p "require('./package.json').version")"
@@ -51,4 +48,15 @@ jobs:
             echo "hiski-mcp@$versio on jo npm:ssä, ohitetaan."
           else
             npm publish --provenance --access public
+          fi
+
+      - name: GitHub Release ja .mcpb-paketti
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME on jo olemassa, päivitetään paketti."
+            gh release upload "$GITHUB_REF_NAME" hiski-mcp.mcpb --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" hiski-mcp.mcpb --title "$GITHUB_REF_NAME" --generate-notes
           fi

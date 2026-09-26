@@ -10,7 +10,7 @@ npm version 0.2.0          # päivittää package.json:n ja manifest.json:n, tek
 git push origin main v0.2.0
 ```
 
-Julkaisun etenemistä voi seurata GitHubin Actions-välilehdellä. Valmis paketti on osoitteessa
+Julkaisun etenemistä voi seurata GitHubin Actions-välilehdellä. Jos jokin askel epäonnistuu, ajon voi käynnistää uudelleen, koska jo julkaistu npm-versio ja olemassa oleva release ohitetaan. Valmis paketti on osoitteessa
 `https://github.com/jleh/hiski-mcp/releases/latest/download/hiski-mcp.mcpb`.
 
 Haaran `main` suojaus vaatii vihreän CI:n, joten version commit pushataan suoraan vain ylläpitäjänä. Toinen tapa on tehdä versionnosto PR:nä ja luoda tagi mergen jälkeen.
