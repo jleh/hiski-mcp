@@ -39,11 +39,11 @@ jobs:
       - run: npm run paketoi
       - name: Testaa paketti Node 24:llä
         run: npm run testaa-paketti
-      # The manifest allows Node 20.3, so the bundled server must run on it.
+      # The oldest Node the manifest allows (compatibility.runtimes); a test keeps them in step.
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
-      - name: Testaa paketti Node 20:llä
+          node-version: 20.18.1
+      - name: Testaa paketti vanhimmalla sallitulla Nodella
         run: npm run testaa-paketti
       - uses: actions/upload-artifact@v7
         with:

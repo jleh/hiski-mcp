@@ -45,3 +45,39 @@ describe("manifest.json", () => {
     expect(synkronoituManifesti(manifesti, paketti, TYOKALUT)).toEqual(manifesti);
   });
 });
+
+/** "20.18.1" → comparable tuple. */
+const versio = (teksti: string) => teksti.split(".").map(Number) as [number, number, number];
+const vertaa = (a: string, b: string) => {
+  const [x, y] = [versio(a), versio(b)];
+  return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
+};
+
+describe("Node version of the bundle", () => {
+  const vahimmais = /^>=(\d+\.\d+\.\d+)$/.exec(
+    (manifesti.compatibility as { runtimes: { node: string } }).runtimes.node,
+  )?.[1];
+
+  it("is at least what every bundled dependency requires", () => {
+    const lukko = lue("package-lock.json") as {
+      packages: Record<string, { dev?: boolean; engines?: { node?: string } }>;
+    };
+    const vaatimukset = Object.entries(lukko.packages)
+      .filter(([polku, paketti]) => polku !== "" && !paketti.dev)
+      .flatMap(([polku, paketti]) => {
+        const alin = /^>=\s*(\d+\.\d+\.\d+)$/.exec(paketti.engines?.node ?? "")?.[1];
+        return alin ? [{ polku, alin }] : [];
+      });
+    const tiukin = vaatimukset.reduce((a, b) => (vertaa(a.alin, b.alin) >= 0 ? a : b));
+    expect(vahimmais, `${tiukin.polku} vaatii Node ${tiukin.alin}`).toBeDefined();
+    expect(
+      vertaa(vahimmais!, tiukin.alin),
+      `${tiukin.polku} vaatii Node ${tiukin.alin}`,
+    ).toBeGreaterThanOrEqual(0);
+  });
+
+  it("is the version CI tests the package with", () => {
+    const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+    expect(ci).toContain(`node-version: ${vahimmais}`);
+  });
+});

@@ -22,8 +22,8 @@ await build({
   bundle: true,
   platform: "node",
   format: "esm",
-  // The oldest Node the manifest allows (compatibility.runtimes).
-  target: "node20",
+  // The oldest Node the manifest allows (compatibility.runtimes: >=20.18.1).
+  target: "node20.18",
   // Some of cheerio's dependencies are CommonJS and call require().
   banner: {
     js: 'import { createRequire as __hiskiRequire } from "node:module"; const require = __hiskiRequire(import.meta.url);',
