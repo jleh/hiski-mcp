@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { McpbManifestSchema } from "@anthropic-ai/mcpb/schemas/0.4";
+import semver from "semver";
 import { describe, expect, it } from "vitest";
 import { synkronoituManifesti } from "../scripts/synkronoi-manifesti.js";
 import { TYOKALUT } from "../src/tyokalut.js";
@@ -47,11 +48,26 @@ describe("manifest.json", () => {
 });
 
 /** "20.18.1" → comparable tuple. */
-const versio = (teksti: string) => teksti.split(".").map(Number) as [number, number, number];
-const vertaa = (a: string, b: string) => {
-  const [x, y] = [versio(a), versio(b)];
-  return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
-};
+/** The lowest Node version an engines range allows, in any range form; undefined if unparseable. */
+function alinNodeVersio(alue: string): string | undefined {
+  return semver.validRange(alue) ? semver.minVersion(alue)?.version : undefined;
+}
+
+describe("alinNodeVersio", () => {
+  it.each([
+    [">=20.18.1", "20.18.1"],
+    [">= 18", "18.0.0"],
+    [">=20", "20.0.0"],
+    ["^20.19.0 || ^22.12.0 || >=24", "20.19.0"],
+    ["18 || 20", "18.0.0"],
+  ])("reads %s as %s", (alue, odotettu) => {
+    expect(alinNodeVersio(alue)).toBe(odotettu);
+  });
+
+  it("gives nothing for a range it cannot parse", () => {
+    expect(alinNodeVersio("uusin")).toBeUndefined();
+  });
+});
 
 describe("Node version of the bundle", () => {
   const vahimmais = /^>=(\d+\.\d+\.\d+)$/.exec(
@@ -63,17 +79,19 @@ describe("Node version of the bundle", () => {
       packages: Record<string, { dev?: boolean; engines?: { node?: string } }>;
     };
     const vaatimukset = Object.entries(lukko.packages)
-      .filter(([polku, paketti]) => polku !== "" && !paketti.dev)
-      .flatMap(([polku, paketti]) => {
-        const alin = /^>=\s*(\d+\.\d+\.\d+)$/.exec(paketti.engines?.node ?? "")?.[1];
-        return alin ? [{ polku, alin }] : [];
+      .filter(([polku, paketti]) => polku !== "" && !paketti.dev && paketti.engines?.node)
+      .map(([polku, paketti]) => {
+        const alue = paketti.engines!.node!;
+        const alin = alinNodeVersio(alue);
+        expect(alin, `${polku}: Node-vaatimusta "${alue}" ei voi jäsentää`).toBeDefined();
+        return { polku, alin: alin! };
       });
-    const tiukin = vaatimukset.reduce((a, b) => (vertaa(a.alin, b.alin) >= 0 ? a : b));
-    expect(vahimmais, `${tiukin.polku} vaatii Node ${tiukin.alin}`).toBeDefined();
+    const tiukin = vaatimukset.reduce((a, b) => (semver.gte(a.alin, b.alin) ? a : b));
+    expect(vahimmais).toBeDefined();
     expect(
-      vertaa(vahimmais!, tiukin.alin),
-      `${tiukin.polku} vaatii Node ${tiukin.alin}`,
-    ).toBeGreaterThanOrEqual(0);
+      semver.gte(vahimmais!, tiukin.alin),
+      `${tiukin.polku} vaatii Node ${tiukin.alin}, manifesti sallii ${vahimmais}`,
+    ).toBe(true);
   });
 
   it("is the version CI tests the package with", () => {
