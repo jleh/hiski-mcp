@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { HiskiClient } from "./client.js";
-import { kirjojenVuodet } from "./muotoilu.js";
+import type { Lomakekirja } from "./lomake.js";
+import { hakutuloksenHuomautukset, kirjojenVuodet } from "./muotoilu.js";
 import { etsiSeurakunta, ratkaiseSeurakunnat, type Seurakunta } from "./parishes.js";
 
 /** What a tool handler gets besides its arguments. */
@@ -27,6 +28,64 @@ const tyokalu = <Skeema extends z.ZodRawShape>(maaritys: Tyokalu<Skeema>) =>
 const eiVielaToteutettu = () => Promise.reject(new Error("Työkalua ei ole vielä toteutettu."));
 
 const ETSI_SEURAKUNTA_MAX = 20;
+/** Per-parish maximums: Hiski counts the maximum per parish, so several parishes default lower. */
+const OLETUSMAKSIMI = { yksi: 50, useita: 15 };
+
+interface Hakuparametrit {
+  seurakunnat: string[];
+  alkuvuosi?: string;
+  loppuvuosi?: string;
+  maksimi?: number;
+  jatkokohta?: string;
+}
+
+/**
+ * A search tool's handler: maps the tool's parameters to Hiski's form fields
+ * (kentat: parameter → field), runs the search and adds notes for the agent.
+ */
+const haku =
+  (
+    kirja: Lomakekirja | ((args: Record<string, unknown>) => Lomakekirja),
+    kentat: Record<string, string>,
+  ) =>
+  async (args: Hakuparametrit & Record<string, unknown>, k: Konteksti) => {
+    const seurakunnat = ratkaiseSeurakunnat(args.seurakunnat);
+    const hakukirja = typeof kirja === "function" ? kirja(args) : kirja;
+    const lomakkeelle = Object.fromEntries(
+      Object.entries(kentat).map(([parametri, kentta]) => [
+        kentta,
+        args[parametri] as string | undefined,
+      ]),
+    );
+    const tulos = await k.hiski.haku(
+      {
+        kirja: hakukirja,
+        seurakunnat: seurakunnat.map((s) => s.koodi),
+        kentat: lomakkeelle,
+        alkuvuosi: args.alkuvuosi,
+        loppuvuosi: args.loppuvuosi,
+        maksimi:
+          args.maksimi ?? (seurakunnat.length > 1 ? OLETUSMAKSIMI.useita : OLETUSMAKSIMI.yksi),
+        jatkokohta: args.jatkokohta,
+      },
+      k.signal,
+    );
+    const huomautukset = hakutuloksenHuomautukset(tulos, {
+      kirja: hakukirja,
+      seurakunnat,
+      alkuvuosi: args.alkuvuosi,
+      loppuvuosi: args.loppuvuosi,
+    });
+    return { ...tulos, ...(huomautukset.length > 0 && { huomautukset }) };
+  };
+
+/** Occupation and names of one person: parameter prefix → Hiski field prefix. */
+const henkilonKentat = (parametri: string, kentta: "i" | "a") => ({
+  [`${parametri}etunimi`]: `${kentta}etunimi`,
+  [`${parametri}patronyymi`]: `${kentta}patronyymi`,
+  [`${parametri}sukunimi`]: `${kentta}sukunimi`,
+  [`${parametri}ammatti`]: `${kentta}ammatti`,
+});
 
 /** Resolves one parish name or code; throws SeurakuntaVirhe with candidates. */
 const ratkaiseYksi = (syote: string): Seurakunta => ratkaiseSeurakunnat([syote])[0]!;
@@ -189,7 +248,12 @@ export const TYOKALUT: Tyokalu[] = [
       ...henkilo("isan_", "Isän"),
       ...henkilo("aidin_", "Äidin"),
     },
-    kasittele: eiVielaToteutettu,
+    kasittele: haku("kastetut", {
+      lapsen_etunimi: "etunimi",
+      kyla: "ikyla",
+      ...henkilonKentat("isan_", "i"),
+      ...henkilonKentat("aidin_", "a"),
+    }),
   }),
   tyokalu({
     nimi: "hae_vihityt",
