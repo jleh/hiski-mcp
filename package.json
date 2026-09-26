@@ -1,7 +1,7 @@
 {
   "name": "hiski-mcp",
-  "version": "0.0.0",
-  "description": "MCP-palvelin Suomen Sukututkimusseuran HisKi-historiakirjatietokannan hakuihin",
+  "version": "0.1.0",
+  "description": "MCP-palvelin Suomen Sukututkimusseuran HisKi-historiakirjojen hakuihin: kastetut, vihityt, haudatut ja muuttaneet",
   "type": "module",
   "bin": {
     "hiski-mcp": "dist/index.js"
@@ -22,10 +22,13 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
+    "prepublishOnly": "npm run check && npm run build"
   },
   "keywords": [
     "mcp",
+    "mcp-server",
+    "claude",
     "genealogy",
     "sukututkimus",
     "hiski"
@@ -49,5 +52,13 @@
     "cheerio": "^1.2.0",
     "domhandler": "^5.0.3",
     "zod": "^4.6.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jleh/hiski-mcp.git"
+  },
+  "homepage": "https://github.com/jleh/hiski-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/jleh/hiski-mcp/issues"
   }
 }
