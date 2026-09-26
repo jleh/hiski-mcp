@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   SEURAKUNNAT,
+  SeurakuntaVirhe,
   etsiSeurakunta,
   normalisoi,
   parseSeurakuntaluettelo,
   parseVuosivalit,
+  ratkaiseSeurakunnat,
 } from "../src/parishes.js";
 import { lueFixture } from "./helpers.js";
 
@@ -140,5 +142,53 @@ describe("etsiSeurakunta", () => {
   it("returns nothing for unknown names", () => {
     expect(koodit("xyzzy")).toEqual([]);
     expect(koodit("   ")).toEqual([]);
+  });
+});
+
+describe("ratkaiseSeurakunnat", () => {
+  const koodit = (syotteet: string[]) => ratkaiseSeurakunnat(syotteet).map((s) => s.koodi);
+  const virhe = (syotteet: string[]) => {
+    try {
+      ratkaiseSeurakunnat(syotteet);
+    } catch (e) {
+      return e;
+    }
+    throw new Error("expected ratkaiseSeurakunnat to throw");
+  };
+
+  it("resolves codes and names", () => {
+    expect(koodit(["0366", "Artjärvi"])).toEqual(["0366", "0015"]);
+  });
+
+  it("accepts an exact name even when other parishes share its prefix", () => {
+    expect(koodit(["Kokkola"])).toEqual(["0218"]);
+  });
+
+  it("accepts a single loose match", () => {
+    expect(koodit(["Karleby lf"])).toEqual(["0172"]);
+  });
+
+  it("removes duplicates", () => {
+    expect(koodit(["0366", "Orimattila", "366"])).toEqual(["0366"]);
+  });
+
+  it("rejects unknown parishes", () => {
+    const e = virhe(["Orimattila", "xyzzy"]);
+    expect(e).toBeInstanceOf(SeurakuntaVirhe);
+    expect((e as SeurakuntaVirhe).syote).toBe("xyzzy");
+    expect((e as SeurakuntaVirhe).ehdokkaat).toEqual([]);
+    expect((e as SeurakuntaVirhe).message).toContain("xyzzy");
+  });
+
+  it("rejects ambiguous names and lists the candidates", () => {
+    const e = virhe(["Kristiinankaupunki"]) as SeurakuntaVirhe;
+    expect(e).toBeInstanceOf(SeurakuntaVirhe);
+    expect(e.ehdokkaat.map((s) => s.koodi).sort()).toEqual(["0236", "0686"]);
+    expect(e.message).toContain("0236");
+  });
+
+  it("limits the candidate list", () => {
+    const e = virhe(["srk"]) as SeurakuntaVirhe;
+    expect(e.ehdokkaat).toHaveLength(10);
   });
 });

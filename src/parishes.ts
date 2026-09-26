@@ -140,3 +140,49 @@ export function etsiSeurakunta(
 ): Seurakunta[] {
   return etsiOsumat(haku, lista).map((o) => o.seurakunta);
 }
+
+const MAX_EHDOKKAITA = 10;
+
+/** A parish name that did not resolve to exactly one parish. */
+export class SeurakuntaVirhe extends Error {
+  constructor(
+    readonly syote: string,
+    readonly ehdokkaat: Seurakunta[],
+  ) {
+    super(
+      ehdokkaat.length === 0
+        ? `Seurakuntaa "${syote}" ei löytynyt.`
+        : `Seurakunta "${syote}" ei ole yksiselitteinen. Ehdokkaat: ${ehdokkaat
+            .map((s) => `${s.koodi} ${s.koko_nimi}`)
+            .join("; ")}`,
+    );
+    this.name = "SeurakuntaVirhe";
+  }
+}
+
+function ratkaiseYksi(syote: string): Seurakunta {
+  const osumat = etsiOsumat(syote, SEURAKUNNAT);
+  const tarkat = osumat.filter((o) => o.taso <= Taso.Tasmaa);
+  if (tarkat.length === 1) return tarkat[0]!.seurakunta;
+  // A lone stem match is only a guess, so it is offered as a candidate instead.
+  if (tarkat.length === 0 && osumat.length === 1 && osumat[0]!.taso < Taso.Vartalo) {
+    return osumat[0]!.seurakunta;
+  }
+  throw new SeurakuntaVirhe(
+    syote,
+    osumat.slice(0, MAX_EHDOKKAITA).map((o) => o.seurakunta),
+  );
+}
+
+/**
+ * Resolves parish codes or names to parishes, dropping duplicates.
+ * Throws SeurakuntaVirhe for an unknown or ambiguous entry.
+ */
+export function ratkaiseSeurakunnat(syotteet: readonly string[]): Seurakunta[] {
+  const tulos = new Map<string, Seurakunta>();
+  for (const syote of syotteet) {
+    const seurakunta = ratkaiseYksi(syote);
+    tulos.set(seurakunta.koodi, seurakunta);
+  }
+  return [...tulos.values()];
+}
