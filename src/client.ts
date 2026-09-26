@@ -178,8 +178,18 @@ async function vastausvirhe(vastaus: Response): Promise<HiskiVirhe> {
   );
 }
 
-/** Hiski's own pages are ISO-8859-1 without saying so; others declare a charset. */
+/**
+ * Hiski's own pages are ISO-8859-1 without saying so; others declare a charset,
+ * possibly quoted. An unknown charset falls back to ISO-8859-1.
+ */
 function dekoodaa(sisaltotyyppi: string | null, tavut: ArrayBuffer): string {
-  const merkisto = /charset=([\w-]+)/i.exec(sisaltotyyppi ?? "")?.[1];
-  return merkisto ? new TextDecoder(merkisto).decode(tavut) : decodeLatin1(new Uint8Array(tavut));
+  const merkisto = /charset="?([\w-]+)/i.exec(sisaltotyyppi ?? "")?.[1];
+  if (merkisto) {
+    try {
+      return new TextDecoder(merkisto).decode(tavut);
+    } catch {
+      // Not a charset TextDecoder knows.
+    }
+  }
+  return decodeLatin1(new Uint8Array(tavut));
 }

@@ -253,3 +253,43 @@ describe("HiskiClient: errors", () => {
     await expect(haku(new HiskiClient({ fetch }))).rejects.toThrow(/yhteyttä/);
   });
 });
+
+describe("HiskiClient: character sets", () => {
+  const vastaus =
+    (tavut: Uint8Array<ArrayBuffer>, tyyppi: string): typeof globalThis.fetch =>
+    () =>
+      Promise.resolve(new Response(tavut, { headers: { "content-type": tyyppi } }));
+  const sivu = (html: string) =>
+    new TextEncoder().encode(
+      `<H1>Seurakunta: 1 - X</H1>Maakunta: 1 Varsinais-Suomi<P>${html}<P><H2>Mustat kirjat</H2>`,
+    );
+  const seurakuntasivu = readFileSync(FIXTURE_KANSIO + "seurakunta-0366.html");
+
+  /** A fetch serving the parish page first and then the given info page. */
+  const kahdesti = (tiedot: typeof globalThis.fetch): typeof globalThis.fetch => {
+    let kutsuja = 0;
+    return (osoite, init) =>
+      kutsuja++ === 0 ? Promise.resolve(new Response(seurakuntasivu)) : tiedot(osoite, init);
+  };
+
+  it("understands a quoted charset", async () => {
+    const fetch = kahdesti(vastaus(sivu("Pöytyä"), 'text/html; charset="UTF-8"'));
+    const tulos = await new HiskiClient({ fetch }).seurakunta("0366");
+    expect(tulos.tila === "ok" && tulos.tiedot?.historia).toEqual(["Pöytyä"]);
+  });
+
+  it("falls back to latin-1 for an unknown charset instead of reporting a network error", async () => {
+    const latin1 = Uint8Array.from("Pöytyä", (m) => m.charCodeAt(0));
+    const fetch = kahdesti(
+      vastaus(
+        new Uint8Array([
+          ...new TextEncoder().encode("<H1>Seurakunta: 1 - X</H1>Maakunta: 1 X<P>"),
+          ...latin1,
+        ]),
+        "text/html; charset=tuntematon-merkisto",
+      ),
+    );
+    const tulos = await new HiskiClient({ fetch }).seurakunta("0366");
+    expect(tulos.tila === "ok" && tulos.tiedot?.historia).toEqual(["Pöytyä"]);
+  });
+});
