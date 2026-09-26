@@ -1,7 +1,7 @@
 {
   "name": "hiski-mcp",
-  "version": "0.0.0",
-  "description": "MCP-palvelin Suomen Sukututkimusseuran HisKi-historiakirjatietokannan hakuihin",
+  "version": "0.1.0",
+  "description": "MCP-palvelin Suomen Sukututkimusseuran HisKi-historiakirjojen hakuihin: kastetut, vihityt, haudatut ja muuttaneet",
   "type": "module",
   "bin": {
     "hiski-mcp": "dist/index.js"
@@ -22,10 +22,17 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
+    "prepublishOnly": "npm run check && npm run build",
+    "synkronoi-manifesti": "tsx scripts/synkronoi-manifesti.ts",
+    "version": "npm run synkronoi-manifesti && prettier --write manifest.json && git add manifest.json",
+    "paketoi": "tsx scripts/paketoi-mcpb.ts",
+    "testaa-paketti": "tsx scripts/testaa-mcpb.ts"
   },
   "keywords": [
     "mcp",
+    "mcp-server",
+    "claude",
     "genealogy",
     "sukututkimus",
     "hiski"
@@ -33,12 +40,16 @@
   "author": "Juuso Lehtinen",
   "license": "MIT",
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.2",
+    "@types/semver": "^7.8.0",
+    "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
     "prettier": "^3.9.8",
+    "semver": "^7.8.5",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.70.0",
@@ -49,5 +60,13 @@
     "cheerio": "^1.2.0",
     "domhandler": "^5.0.3",
     "zod": "^4.6.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jleh/hiski-mcp.git"
+  },
+  "homepage": "https://github.com/jleh/hiski-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/jleh/hiski-mcp/issues"
   }
 }

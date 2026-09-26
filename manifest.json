@@ -1,0 +1,70 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "hiski-mcp",
+  "display_name": "HisKi – sukututkimushaut",
+  "version": "0.1.0",
+  "description": "MCP-palvelin Suomen Sukututkimusseuran HisKi-historiakirjojen hakuihin: kastetut, vihityt, haudatut ja muuttaneet",
+  "long_description": "Hakee Suomen Sukututkimusseuran HisKi-tietokannasta seurakuntien historiakirjojen tapahtumia: kastetut, vihityt, haudatut sekä sisään- ja poismuuttaneet. Claude voi etsiä seurakuntia, hakea henkilöitä nimillä, patronyymeillä, paikoilla ja vuosilla, ja näyttää yksittäisen tapahtuman tarkat tiedot linkkeineen SSHY:n digiarkistoon.\n\nHaut tehdään suoraan julkiseen HisKi-palveluun (hiski.genealogia.fi) omalta koneeltasi. Kirjautumista tai asetuksia ei tarvita.",
+  "author": {
+    "name": "Juuso Lehtinen",
+    "url": "https://github.com/jleh"
+  },
+  "homepage": "https://github.com/jleh/hiski-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jleh/hiski-mcp"
+  },
+  "support": "https://github.com/jleh/hiski-mcp/issues",
+  "icon": "icon.png",
+  "license": "MIT",
+  "keywords": ["sukututkimus", "genealogy", "hiski", "kirkonkirjat", "Suomi"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"]
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=20.18.1"
+    }
+  },
+  "tools": [
+    {
+      "name": "etsi_seurakunta",
+      "description": "Etsii Hiskin seurakuntia nimellä, osalla nimestä, ruotsinkielisellä nimellä tai koodilla. Palauttaa enintään 20 osumaa parhaat ensin: koodi, nimi, rinnakkaisnimi ja kunkin kirjan (kastetut, vihityt, haudatut, sisään- ja poismuuttaneet) Hiskiin indeksoidut vuodet. Toimii ilman verkkoyhteyttä."
+    },
+    {
+      "name": "seurakunnan_tiedot",
+      "description": "Hakee Hiskistä yhden seurakunnan tiedot: kirjat ja niiden indeksoidut vuodet, naapuriseurakunnat koodeineen, mahdollinen huomautus aineistosta (esim. Karjala-tietokanta), maakunta, historia (perustaminen, emäseurakunta, arkistotuhot), kylät ja vanhat nimet."
+    },
+    {
+      "name": "hae_kastetut",
+      "description": "Hakee Hiskin kastettujen (syntyneiden) luettelosta yhdestä tai useammasta seurakunnasta. Tapahtumassa on syntymä- ja kastepäivä, kylä, talo, isä, äiti ja hänen ikänsä sekä lapsi. Tulos on seurakunnittain: hakutermit (mitä nimimuotoja Hiski haki ja mitä ei löytynyt), tapahtumat alkuperäisessä kirjoitusasussa numeroineen ja tieto katkaistusta tuloksesta jatkokohtineen. Henkilö on yksi merkkijono (ammatti ja nimet yhdessä); hae_tapahtuma antaa ne eriteltyinä."
+    },
+    {
+      "name": "hae_vihityt",
+      "description": "Hakee Hiskin vihittyjen luettelosta yhdestä tai useammasta seurakunnasta. Tapahtumassa on kuulutus- ja vihkipäivä sekä mies ja vaimo kylineen ja taloineen. Tulos on seurakunnittain: hakutermit (mitä nimimuotoja Hiski haki ja mitä ei löytynyt), tapahtumat alkuperäisessä kirjoitusasussa numeroineen ja tieto katkaistusta tuloksesta jatkokohtineen. Henkilö on yksi merkkijono (ammatti ja nimet yhdessä); hae_tapahtuma antaa ne eriteltyinä."
+    },
+    {
+      "name": "hae_haudatut",
+      "description": "Hakee Hiskin haudattujen (kuolleiden) luettelosta yhdestä tai useammasta seurakunnasta. Tapahtumassa on kuolin- ja hautauspäivä, kylä, talo, vainaja, kuolinsyy, ikä (vuodet, kuukaudet, viikot, päivät) ja joissain seurakunnissa omainen. Tulos on seurakunnittain: hakutermit (mitä nimimuotoja Hiski haki ja mitä ei löytynyt), tapahtumat alkuperäisessä kirjoitusasussa numeroineen ja tieto katkaistusta tuloksesta jatkokohtineen. Henkilö on yksi merkkijono (ammatti ja nimet yhdessä); hae_tapahtuma antaa ne eriteltyinä."
+    },
+    {
+      "name": "hae_muuttaneet",
+      "description": "Hakee Hiskin sisään- tai poismuuttaneiden luettelosta. Muuttoluetteloita on vain osasta seurakuntia ja usein lyhyiltä ajoilta; seurakunnan vuodet kertoo etsi_seurakunta. Tapahtumassa on lähtö- ja saapumispäivä, kylä ja talo tässä seurakunnassa, henkilö ja toinen paikka (mistä tai minne). Tulos on seurakunnittain: hakutermit (mitä nimimuotoja Hiski haki ja mitä ei löytynyt), tapahtumat alkuperäisessä kirjoitusasussa numeroineen ja tieto katkaistusta tuloksesta jatkokohtineen. Henkilö on yksi merkkijono (ammatti ja nimet yhdessä); hae_tapahtuma antaa ne eriteltyinä."
+    },
+    {
+      "name": "hae_kaikki",
+      "description": "Hakee henkilöä Hiskin kaikista kirjoista kerralla (kastetut, vihityt, haudatut, muuttaneet) yhdestä tai useammasta seurakunnasta. Tulos on jaettu kirjoittain. Tulos on seurakunnittain: hakutermit (mitä nimimuotoja Hiski haki ja mitä ei löytynyt), tapahtumat alkuperäisessä kirjoitusasussa numeroineen ja tieto katkaistusta tuloksesta jatkokohtineen. Henkilö on yksi merkkijono (ammatti ja nimet yhdessä); hae_tapahtuma antaa ne eriteltyinä."
+    },
+    {
+      "name": "hae_tapahtuma",
+      "description": "Hakee yhden Hiskin tapahtuman tarkat tiedot hakutuloksen numerolla. Henkilöt ovat eriteltyinä (ammatti, etunimi, patronyymi, sukunimi, ikä), mukana ovat alkuperäis- ja tallentajan kommentit, SSHY-digiarkiston linkki alkuperäisen kirjan kuvaan ja Hiskin pysyvä linkki."
+    }
+  ]
+}

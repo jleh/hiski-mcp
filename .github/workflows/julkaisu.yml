@@ -1,0 +1,62 @@
+name: Julkaisu
+
+# Publishes a version when its tag is pushed, e.g. `git push origin v0.2.0`
+# after `npm version 0.2.0`. See docs/julkaisu.md.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # GitHub Release
+  id-token: write # npm Trusted Publishing and provenance
+
+jobs:
+  julkaise:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      # Trusted Publishing needs npm 11.5.1 or newer.
+      - run: npm install -g npm@^11.5.1
+      - run: npm ci
+
+      - name: Tarkista, että tagi ja versiot täsmäävät
+        run: |
+          tagi="${GITHUB_REF_NAME#v}"
+          paketti="$(node -p "require('./package.json').version")"
+          manifesti="$(node -p "require('./manifest.json').version")"
+          if [ "$tagi" != "$paketti" ] || [ "$tagi" != "$manifesti" ]; then
+            echo "::error::Tagi $GITHUB_REF_NAME, package.json $paketti ja manifest.json $manifesti eivät täsmää."
+            exit 1
+          fi
+
+      - run: npm run check
+      - run: npm run build
+      - run: npm run paketoi
+      - run: npm run testaa-paketti
+
+      # npm first: if it fails, a re-run can still create the release, and
+      # both steps skip what already exists, so the job can always be re-run.
+      - name: Julkaise npm:ään
+        run: |
+          versio="$(node -p "require('./package.json').version")"
+          if npm view "hiski-mcp@$versio" version > /dev/null 2>&1; then
+            echo "hiski-mcp@$versio on jo npm:ssä, ohitetaan."
+          else
+            npm publish --provenance --access public
+          fi
+
+      - name: GitHub Release ja .mcpb-paketti
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME on jo olemassa, päivitetään paketti."
+            gh release upload "$GITHUB_REF_NAME" hiski-mcp.mcpb --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" hiski-mcp.mcpb --title "$GITHUB_REF_NAME" --generate-notes
+          fi

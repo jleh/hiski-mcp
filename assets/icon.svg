@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- An open church book with a magnifying glass: searching parish records.
+       Rendered to icon.png with: npx -y @resvg/resvg-js-cli --fit-width 512 assets/icon.svg icon.png
+       (ImageMagick's built-in SVG renderer draws the strokes as hairlines.) -->
+  <rect width="512" height="512" rx="96" fill="#1f4e79"/>
+  <path d="M256 150 C206 120 146 116 96 128 V372 C146 360 206 364 256 394 Z" fill="#f7f1e3" stroke="#c9b98f" stroke-width="6"/>
+  <path d="M256 150 C306 120 366 116 416 128 V372 C366 360 306 364 256 394 Z" fill="#f7f1e3" stroke="#c9b98f" stroke-width="6"/>
+  <line x1="126" y1="178" x2="226" y2="190" stroke="#8a7a55" stroke-width="8" stroke-linecap="round"/>
+  <line x1="126" y1="218" x2="226" y2="230" stroke="#8a7a55" stroke-width="8" stroke-linecap="round"/>
+  <line x1="126" y1="258" x2="226" y2="270" stroke="#8a7a55" stroke-width="8" stroke-linecap="round"/>
+  <line x1="126" y1="298" x2="200" y2="308" stroke="#8a7a55" stroke-width="8" stroke-linecap="round"/>
+  <line x1="286" y1="190" x2="386" y2="178" stroke="#8a7a55" stroke-width="8" stroke-linecap="round"/>
+  <line x1="286" y1="230" x2="340" y2="224" stroke="#8a7a55" stroke-width="8" stroke-linecap="round"/>
+  <line x1="400" y1="344" x2="448" y2="392" stroke="#f2b134" stroke-width="26" stroke-linecap="round"/>
+  <circle cx="356" cy="300" r="62" fill="#d6e6f5" fill-opacity="0.55" stroke="#f2b134" stroke-width="18"/>
+</svg>
