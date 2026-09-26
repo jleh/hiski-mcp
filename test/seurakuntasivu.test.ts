@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSeurakuntasivu } from "../src/seurakuntasivu.js";
+import { parseSeurakuntasivu, parseSeurakuntatiedot } from "../src/seurakuntasivu.js";
 import { lueFixture } from "./helpers.js";
 
 const sivu = (fixture: string) => parseSeurakuntasivu(lueFixture(fixture));
@@ -59,5 +59,52 @@ describe("parseSeurakuntasivu", () => {
 
   it("recognizes an unknown parish code", () => {
     expect(sivu("seurakunta-tuntematon.html")).toEqual({ tila: "ei_loytynyt" });
+  });
+});
+
+describe("parseSeurakuntatiedot", () => {
+  const tiedot = (fixture: string) => parseSeurakuntatiedot(lueFixture(fixture, "utf8"));
+
+  it("reads the province, history and villages", () => {
+    const orimattila = tiedot("seurakuntatiedot-366.html");
+    expect(orimattila).toMatchObject({
+      tila: "ok",
+      maakunta: "Päijät-Häme",
+      historia: [
+        "Alkuaan ollut Hollolaan kuuluvana kappelina. Erotettu omaksi seurakunnaksi vuonna 1636.",
+        "- Tuli pääsi 9/2 1926 irti kirkon rippikoulusalin ullakolla, mutta saatiin sammutetuksi. [O. Durchman: Kirkonarkistojen tuhoutumiset. Genos 3(1932)]",
+      ],
+    });
+    const kylat = orimattila.tila === "ok" ? orimattila.kylat : undefined;
+    expect(kylat).toHaveLength(22);
+    expect(kylat?.[0]).toBe("Heinämaa (Hyyttäri)");
+    expect(kylat).toContain("Suonsulku (Pennala)");
+    expect(kylat?.at(-1)).toBe("Virenoja");
+    expect(orimattila).not.toHaveProperty("vanhat_nimet");
+  });
+
+  it("reads the old names of a parish without villages", () => {
+    expect(tiedot("seurakuntatiedot-706.html")).toEqual({
+      tila: "ok",
+      maakunta: "Sotilasseurakunnat",
+      historia: ["Pataljoona perustettiin vuonna 1854 ja lakkautettiin vuonna 1868."],
+      vanhat_nimet: [
+        "Oulun pataljoona, 3. tarkkampujakomppania",
+        "Uleåborgs bataljon, 3 skarpskyttekompaniet",
+        "3. Oulun ruotuväkitarkkampujapataljoona",
+        "3. Oulun ruotutarkkampujapataljoona",
+      ],
+    });
+  });
+
+  it("leaves out archive listings and clergy", () => {
+    const teksti = JSON.stringify(tiedot("seurakuntatiedot-366.html"));
+    for (const pois of ["Rippikirja", "Rulla", "Kirkkoherrat", "Naapuriseurakunnat", "Lahti"]) {
+      expect(teksti).not.toContain(pois);
+    }
+  });
+
+  it("recognizes a parish without info", () => {
+    expect(tiedot("seurakuntatiedot-ei-loytynyt.html")).toEqual({ tila: "ei_loytynyt" });
   });
 });

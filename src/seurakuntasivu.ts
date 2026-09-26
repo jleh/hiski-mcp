@@ -104,3 +104,63 @@ function lueHuomautus(html: string): Huomautus | undefined {
     }));
   return { teksti, ...(linkit.length > 0 && { linkit }) };
 }
+
+export type Seurakuntatiedot =
+  | {
+      tila: "ok";
+      maakunta?: string;
+      /** Paragraphs about the parish: founding, mother parish, destroyed archives. */
+      historia?: string[];
+      /** Villages; old or parallel names in parentheses, e.g. "Heinämaa (Hyyttäri)". */
+      kylat?: string[];
+      vanhat_nimet?: string[];
+    }
+  | { tila: "ei_loytynyt" };
+
+const OTSIKKO = /<H1>([^<]*)<\/H1>/i;
+
+/** Text of an HTML fragment, whitespace collapsed. */
+const tekstiksi = (html: string) => siisti(cheerio.load(html, null, false).root().text());
+
+/**
+ * Parses a parish info page (mini-pgsql.php). The page is loose text between
+ * headings, so it is split at <H2> headings; only the sections that help
+ * interpret search results are kept (not archive listings or clergy).
+ */
+export function parseSeurakuntatiedot(html: string): Seurakuntatiedot {
+  const otsikko = OTSIKKO.exec(html);
+  if (!otsikko) throw new Error("Seurakunnan lisätietosivua ei tunnistettu");
+  if (otsikko[1]!.includes("Ei löytynyt")) return { tila: "ei_loytynyt" };
+
+  const [johdanto = "", ...osiot] = html.slice(otsikko.index + otsikko[0].length).split(/<H2>/i);
+  // The introduction runs from the province line to the first map image.
+  const [maakuntarivi = "", ...kappaleet] = johdanto.split(/<IMG/i)[0]!.split(/<P>/i);
+  const maakunta = /Maakunta:\s*\d*\s*(.*)/.exec(tekstiksi(maakuntarivi) ?? "")?.[1];
+  const historia = kappaleet.map(tekstiksi).filter((k): k is string => k !== undefined);
+
+  let kylat: string[] = [];
+  let vanhatNimet: string[] = [];
+  for (const osio of osiot) {
+    const [nimi = "", sisalto = ""] = osio.split(/<\/H2>/i);
+    if (siisti(nimi) === "Kylät") {
+      kylat = (tekstiksi(sisalto) ?? "")
+        .split(",")
+        .map((kyla) => siisti(kyla))
+        .filter((kyla): kyla is string => kyla !== undefined);
+    } else if (siisti(nimi) === "Vanhat nimet") {
+      const $ = cheerio.load(sisalto, null, false);
+      vanhatNimet = $("li")
+        .get()
+        .map((li) => siisti($(li).text()))
+        .filter((n): n is string => n !== undefined);
+    }
+  }
+
+  return {
+    tila: "ok",
+    ...(maakunta && { maakunta }),
+    ...(historia.length > 0 && { historia }),
+    ...(kylat.length > 0 && { kylat }),
+    ...(vanhatNimet.length > 0 && { vanhat_nimet: vanhatNimet }),
+  };
+}
