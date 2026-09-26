@@ -1,9 +1,12 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import type { Merkisto } from "../scripts/fixturet.js";
 import { decodeLatin1 } from "../src/encoding.js";
 
-/** Reads a saved Hiski response (ISO-8859-1) from test/fixtures. */
-export function lueFixture(nimi: string): string {
-  const polku = fileURLToPath(new URL(`./fixtures/${nimi}`, import.meta.url));
-  return decodeLatin1(readFileSync(polku));
+export const FIXTURE_KANSIO = fileURLToPath(new URL("./fixtures/", import.meta.url));
+
+/** Reads a saved Hiski response from test/fixtures (ISO-8859-1 unless stated). */
+export function lueFixture(nimi: string, merkisto: Merkisto = "latin1"): string {
+  const tavut = readFileSync(FIXTURE_KANSIO + nimi);
+  return merkisto === "utf8" ? tavut.toString("utf8") : decodeLatin1(tavut);
 }
