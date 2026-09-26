@@ -156,3 +156,29 @@ describe("parseHakutulos: kastetut", () => {
     expect(numerolla(22286)).not.toHaveProperty("kommentit");
   });
 });
+
+describe("parseHakutulos: vihityt", () => {
+  const { lohkot } = jasenna("haku-vihityt-monta.html");
+
+  it("keeps an empty parish block next to one with results", () => {
+    expect(lohkot.map((l) => [l.seurakunta.koodi, l.kirja, l.tapahtumat.length])).toEqual([
+      ["0015", "vihityt", 0],
+      ["0366", "vihityt", 2],
+    ]);
+  });
+
+  it("parses the columns of a marriage, including both spouses' homes", () => {
+    expect(lohkot[1]!.tapahtumat[0]).toEqual({
+      kirja: "vihityt",
+      numero: 3848,
+      url: "https://hiski.genealogia.fi/hiski?fi+0366+vihityt+3848",
+      vihitty: "26.12.1826",
+      miehen_kyla: "Nastola",
+      miehen_talo: "Achtiala Heickerö",
+      mies: "Bonde son u:k: Johan Hansson",
+      vaimo: "Bonde dotter Anna Stina Johansd.",
+      vaimon_kyla: "Kuivando",
+      vaimon_talo: "Skyttälä",
+    });
+  });
+});

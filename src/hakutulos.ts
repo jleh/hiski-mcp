@@ -37,7 +37,19 @@ export interface Kastettu extends Perus {
   lapsi?: string;
 }
 
-export type Tapahtuma = Kastettu;
+export interface Vihitty extends Perus {
+  kirja: "vihityt";
+  kuulutettu?: string;
+  vihitty?: string;
+  miehen_kyla?: string;
+  miehen_talo?: string;
+  mies?: string;
+  vaimo?: string;
+  vaimon_kyla?: string;
+  vaimon_talo?: string;
+}
+
+export type Tapahtuma = Kastettu | Vihitty;
 
 export interface Lohko {
   seurakunta: { koodi: string; nimi: string };
@@ -76,7 +88,16 @@ const EI_TIETOKANNASSA = "hakutekstiä ei löydy tietokannasta";
 /** Which event field each result column holds, per book. */
 const SARAKKEET: Record<HakuKirja, readonly string[]> = {
   kastetut: ["syntynyt", "kastettu", "kyla", "talo", "isa", "aiti", "lapsi"],
-  vihityt: [],
+  vihityt: [
+    "kuulutettu",
+    "vihitty",
+    "miehen_kyla",
+    "miehen_talo",
+    "mies",
+    "vaimo",
+    "vaimon_kyla",
+    "vaimon_talo",
+  ],
   haudatut: [],
   smuutt: [],
   umuutt: [],
