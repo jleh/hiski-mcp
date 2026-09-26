@@ -160,3 +160,52 @@ describe("HiskiClient: cancellation", () => {
     expect(signaalit[0]).toBeInstanceOf(AbortSignal);
   });
 });
+
+describe("HiskiClient.seurakunta", () => {
+  it("fetches the parish page and then its info page", async () => {
+    const { hiski, pyynnot } = client(
+      { fixture: "seurakunta-0366.html" },
+      { fixture: "seurakuntatiedot-366.html", charset: "UTF-8" },
+    );
+    const tulos = await hiski.seurakunta("0366");
+    expect(pyynnot.map((p) => p.url)).toEqual([
+      "https://hiski.genealogia.fi/hiski?fi+0366",
+      "https://hiski.genealogia.fi/historia/mini-pgsql.php?srk=366&kieli=fi",
+    ]);
+    expect(tulos).toMatchObject({
+      tila: "ok",
+      sivu: { koodi: "0366", nimi: "Orimattila" },
+      tiedot: { maakunta: "Päijät-Häme" },
+    });
+    expect(tulos.tila === "ok" && tulos.tiedot?.kylat).toContain("Heinämaa (Hyyttäri)");
+  });
+
+  it("still answers when the info page fails", async () => {
+    const { hiski } = client({ fixture: "seurakunta-0366.html" }, { status: 500 });
+    const tulos = await hiski.seurakunta("0366");
+    expect(tulos).toMatchObject({ tila: "ok", sivu: { koodi: "0366" } });
+    expect(tulos).not.toHaveProperty("tiedot");
+  });
+
+  it("leaves out an info page that has no info", async () => {
+    const { hiski } = client(
+      { fixture: "seurakunta-0366.html" },
+      { fixture: "seurakuntatiedot-ei-loytynyt.html", charset: "UTF-8" },
+    );
+    expect(await hiski.seurakunta("0366")).not.toHaveProperty("tiedot");
+  });
+
+  it("keeps the note of a ceded Karelian parish", async () => {
+    const { hiski } = client({ fixture: "seurakunta-0627.html" }, { status: 404 });
+    const tulos = await hiski.seurakunta("0627");
+    expect(tulos.tila === "ok" && tulos.sivu.huomautus?.teksti).toContain(
+      "Karjala-tietokantasäätiö",
+    );
+  });
+
+  it("reports an unknown parish without fetching the info page", async () => {
+    const { hiski, pyynnot } = client({ fixture: "seurakunta-tuntematon.html" });
+    expect(await hiski.seurakunta("9999")).toEqual({ tila: "ei_loytynyt" });
+    expect(pyynnot).toHaveLength(1);
+  });
+});

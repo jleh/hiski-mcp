@@ -1,6 +1,12 @@
 import { decodeLatin1 } from "./encoding.js";
 import { HISKI_URL, parseHakutulos, type HakuKirja, type HakuTulos } from "./hakutulos.js";
 import { koodaaLatin1, LomakeVirhe, rakennaHakulomake, type HakuPyynto } from "./lomake.js";
+import {
+  parseSeurakuntasivu,
+  parseSeurakuntatiedot,
+  type Seurakuntasivu,
+  type Seurakuntatiedot,
+} from "./seurakuntasivu.js";
 import { parseTapahtumasivu, type TapahtumanTiedot } from "./tapahtumasivu.js";
 import { SERVER_NAME, SERVER_VERSION } from "./version.js";
 
@@ -29,6 +35,15 @@ export type TapahtumanHaku =
   | { tila: "virhe" };
 
 const USER_AGENT = `${SERVER_NAME}/${SERVER_VERSION} (+https://github.com/jleh/hiski-mcp)`;
+
+export type SeurakunnanHaku =
+  | {
+      tila: "ok";
+      sivu: Extract<Seurakuntasivu, { tila: "ok" }>;
+      /** Background from the parish info page, when it has any and could be fetched. */
+      tiedot?: Extract<Seurakuntatiedot, { tila: "ok" }>;
+    }
+  | { tila: "ei_loytynyt" };
 
 /** Talks to Hiski using web-standard APIs only, so it also runs outside Node. */
 export class HiskiClient {
@@ -80,6 +95,25 @@ export class HiskiClient {
       if (sivu.tila === "ei_loytynyt" || yritys >= this.#yrityksia) return { tila: sivu.tila };
       await this.#odota(this.#uudelleenyritysMs, signal);
     }
+  }
+
+  /**
+   * Fetches a parish's page and then its info page. The info page is only
+   * background, so the answer is given without it if it cannot be fetched.
+   */
+  async seurakunta(koodi: string, signal?: AbortSignal): Promise<SeurakunnanHaku> {
+    if (!/^\d{4}$/.test(koodi)) throw new LomakeVirhe(`Seurakuntakoodi "${koodi}" ei kelpaa.`);
+    const sivu = parseSeurakuntasivu(await this.#lataa(`${HISKI_URL}?fi+${koodi}`, {}, signal));
+    if (sivu.tila !== "ok") return sivu;
+    if (!sivu.lisatiedot_url) return { tila: "ok", sivu };
+    let tiedot: Seurakuntatiedot | undefined;
+    try {
+      tiedot = parseSeurakuntatiedot(await this.#lataa(sivu.lisatiedot_url, {}, signal));
+    } catch {
+      // A cancelled request stays cancelled; otherwise only background is missing.
+      signal?.throwIfAborted();
+    }
+    return { tila: "ok", sivu, ...(tiedot?.tila === "ok" && { tiedot }) };
   }
 
   async #lataa(url: string, init: RequestInit, signal?: AbortSignal): Promise<string> {
