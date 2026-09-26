@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { HiskiClient } from "./client.js";
+import type { HakuKirja } from "./hakutulos.js";
 import type { Lomakekirja } from "./lomake.js";
-import { hakutuloksenHuomautukset, kirjojenVuodet } from "./muotoilu.js";
+import { hakutuloksenHuomautukset, kirjojenVuodet, TyokaluVirhe } from "./muotoilu.js";
 import { etsiSeurakunta, ratkaiseSeurakunnat, type Seurakunta } from "./parishes.js";
 
 /** What a tool handler gets besides its arguments. */
@@ -24,8 +25,6 @@ export interface Tyokalu<Skeema extends z.ZodRawShape = z.ZodRawShape> {
 /** Keeps each tool's argument type tied to its own schema. */
 const tyokalu = <Skeema extends z.ZodRawShape>(maaritys: Tyokalu<Skeema>) =>
   maaritys as unknown as Tyokalu;
-
-const eiVielaToteutettu = () => Promise.reject(new Error("Työkalua ei ole vielä toteutettu."));
 
 const ETSI_SEURAKUNTA_MAX = 20;
 /** Per-parish maximums: Hiski counts the maximum per parish, so several parishes default lower. */
@@ -79,6 +78,23 @@ const haku =
     return { ...tulos, ...(huomautukset.length > 0 && { huomautukset }) };
   };
 
+async function haeTapahtuma(
+  { seurakunta, kirja, numero }: { seurakunta: string; kirja: HakuKirja; numero: number },
+  k: Konteksti,
+) {
+  const { koodi, nimi } = ratkaiseYksi(seurakunta);
+  const tulos = await k.hiski.tapahtuma(koodi, kirja, numero, k.signal);
+  if (tulos.tila === "ok") return tulos.tapahtuma;
+  if (tulos.tila === "ei_loytynyt") {
+    return {
+      huomautus: `Seurakunnan ${nimi} (${koodi}) kirjassa ${kirja} ei ole tapahtumaa numero ${numero}.`,
+    };
+  }
+  throw new TyokaluVirhe(
+    "Hiski ei antanut tapahtumaa usealla yrityksellä (se vastaa tapahtumasivuihin ajoittain virhesivulla). Yritä hetken kuluttua uudelleen.",
+  );
+}
+
 /** Occupation and names of one person: parameter prefix → Hiski field prefix. */
 const henkilonKentat = (parametri: string, kentta: "i" | "a") => ({
   [`${parametri}etunimi`]: `${kentta}etunimi`,
@@ -112,7 +128,7 @@ function etsiSeurakuntaa({ nimi }: { nimi: string }) {
 async function seurakunnanTiedot({ seurakunta }: { seurakunta: string }, k: Konteksti) {
   const { koodi } = ratkaiseYksi(seurakunta);
   const tulos = await k.hiski.seurakunta(koodi, k.signal);
-  if (tulos.tila !== "ok") throw new Error(`Hiski ei tunne seurakuntaa ${koodi}.`);
+  if (tulos.tila !== "ok") throw new TyokaluVirhe(`Hiski ei tunne seurakuntaa ${koodi}.`);
   const { sivu, tiedot } = tulos;
   return {
     koodi: sivu.koodi,
@@ -363,6 +379,6 @@ export const TYOKALUT: Tyokalu[] = [
         .describe("Tapahtuman kirja; smuutt = sisäänmuuttaneet, umuutt = poismuuttaneet."),
       numero: z.number().int().min(0).describe("Tapahtuman numero hakutuloksesta."),
     },
-    kasittele: eiVielaToteutettu,
+    kasittele: haeTapahtuma,
   }),
 ];

@@ -30,13 +30,17 @@ export async function yhdista(...vastaukset: Vastaus[]) {
     }
     return Promise.resolve(new Response(vastaus.teksti ?? "", { status: vastaus.status }));
   };
+  return { asiakas: await yhdistaFetchilla(fetch), pyynnot };
+}
+
+/** Connects an MCP client to a server whose Hiski requests go to the given fetch. */
+export async function yhdistaFetchilla(fetch: typeof globalThis.fetch): Promise<Client> {
   const hiski = new HiskiClient({ fetch, odota: () => Promise.resolve() });
   const [asiakkaanPaa, palvelimenPaa] = InMemoryTransport.createLinkedPair();
-  const palvelin = luoPalvelin(hiski);
-  await palvelin.connect(palvelimenPaa);
+  await luoPalvelin(hiski).connect(palvelimenPaa);
   const asiakas = new Client({ name: "testi", version: "0.0.0" });
   await asiakas.connect(asiakkaanPaa);
-  return { asiakas, pyynnot };
+  return asiakas;
 }
 
 /** Calls a tool and returns its text answer, parsed as JSON when possible. */

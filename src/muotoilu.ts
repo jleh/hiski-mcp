@@ -1,4 +1,6 @@
+import { HiskiVirhe } from "./client.js";
 import type { HakuTulos } from "./hakutulos.js";
+import { LomakeVirhe } from "./lomake.js";
 import { SeurakuntaVirhe, type Seurakunta, type Vuosivali } from "./parishes.js";
 
 /** "1697–1710, 1718–1890": compact for the agent, unlike a list of objects. */
@@ -17,12 +19,31 @@ export function kirjojenVuodet(
   );
 }
 
+/** An expected failure of a tool whose message the agent can act on. */
+export class TyokaluVirhe extends Error {
+  constructor(viesti: string) {
+    super(viesti);
+    this.name = "TyokaluVirhe";
+  }
+}
+
+const ILMOITA_ONGELMASTA = "https://github.com/jleh/hiski-mcp/issues";
+
 /** The text the agent sees for an error, with a next step where one helps. */
 export function virheViesti(virhe: unknown): string {
   if (virhe instanceof SeurakuntaVirhe) {
     return `${virhe.message} Seurakuntia voi etsiä etsi_seurakunta-työkalulla; koodilla ("0366") valinta on yksiselitteinen.`;
   }
-  return virhe instanceof Error ? virhe.message : String(virhe);
+  if (
+    virhe instanceof LomakeVirhe ||
+    virhe instanceof HiskiVirhe ||
+    virhe instanceof TyokaluVirhe
+  ) {
+    return virhe.message;
+  }
+  // Anything else means Hiski's page was not what the parsers expect.
+  const syy = virhe instanceof Error ? virhe.message : String(virhe);
+  return `Hiskin sivu oli odottamattoman muotoinen (${syy}). Hiski on voinut muuttua; ongelmasta voi ilmoittaa: ${ILMOITA_ONGELMASTA}`;
 }
 
 const KIRJAN_NIMI: Record<string, string> = {
