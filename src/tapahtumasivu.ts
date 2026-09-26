@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
-import { HISKI_URL, type HakuKirja, type Kommentti } from "./hakutulos.js";
+import { HISKI_URL, type HakuKirja, type Ika, type Kommentti } from "./hakutulos.js";
 import { jasennaSolu, type Solu } from "./solu.js";
 import { siisti } from "./teksti.js";
 
@@ -51,7 +51,22 @@ export interface VihitynTiedot extends Yhteiset {
   vaimo?: Puoliso;
 }
 
-export type TapahtumanTiedot = KastetunTiedot | VihitynTiedot;
+export interface HaudatunTiedot extends Yhteiset {
+  kirja: "haudatut";
+  kuollut?: string;
+  haudattu?: string;
+  kyla?: string;
+  talo?: string;
+  /** The deceased ("Vainaja" on the page). */
+  henkilo?: Henkilo;
+  kuolinsyy?: string;
+  ika?: Ika;
+  /** The age as Hiski printed it, when it is not in the usual "v. kk vko pv" form. */
+  ika_teksti?: string;
+  omainen?: Henkilo & { lisatieto?: string };
+}
+
+export type TapahtumanTiedot = KastetunTiedot | VihitynTiedot | HaudatunTiedot;
 
 export type Tapahtumasivu =
   | { tila: "ok"; tapahtuma: TapahtumanTiedot }
@@ -94,6 +109,27 @@ const henkilo =
   (tapahtuma, solut) =>
     arvot(...HENKILON_KENTAT.map((k) => `${kentta}.${k}`))(tapahtuma, solut);
 
+const IKA = /^(\S+) v\. (\S+) kk (\S+) vko (\S+) pv$/;
+const IKAYKSIKOT = ["vuodet", "kuukaudet", "viikot", "paivat"] as const;
+
+/** Reads the cause of death and the age "28 v. - kk - vko - pv" ("-" is empty). */
+const kuolinsyyJaIka: Kasittelija = (tapahtuma, solut) => {
+  arvot("kuolinsyy")(tapahtuma, solut);
+  const teksti = solut[1]?.arvo;
+  if (!teksti) return;
+  const osat = IKA.exec(teksti);
+  if (!osat) {
+    tapahtuma.ika_teksti = teksti;
+    return;
+  }
+  const ika: Ika = {};
+  IKAYKSIKOT.forEach((yksikko, i) => {
+    const arvo = osat[i + 1];
+    if (arvo && arvo !== "-") ika[yksikko] = arvo;
+  });
+  if (Object.keys(ika).length > 0) tapahtuma.ika = ika;
+};
+
 /** Which fields each row fills, keyed by the row's heading path, per book. */
 const RIVIT: Record<HakuKirja, Record<string, Kasittelija>> = {
   kastetut: {
@@ -110,7 +146,14 @@ const RIVIT: Record<HakuKirja, Record<string, Kasittelija>> = {
     "Vaimo › Kylä / Talo": arvot("vaimo.kyla", "vaimo.talo"),
     "Vaimo › Nimi": henkilo("vaimo"),
   },
-  haudatut: {},
+  haudatut: {
+    "Kuollut / Haudattu": arvot("kuollut", "haudattu"),
+    "Kylä / Talo": arvot("kyla", "talo"),
+    Vainaja: henkilo("henkilo"),
+    "Kuolinsyy / Ikä": kuolinsyyJaIka,
+    Omainen: henkilo("omainen"),
+    "Omainen › jatko": arvot("omainen.lisatieto"),
+  },
   smuutt: {},
   umuutt: {},
 };

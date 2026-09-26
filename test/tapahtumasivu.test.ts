@@ -120,3 +120,40 @@ describe("parseTapahtumasivu: vihityt", () => {
     });
   });
 });
+
+describe("parseTapahtumasivu: haudatut", () => {
+  it("reads the deceased, cause of death and age", () => {
+    expect(tapahtuma("tapahtuma-haudatut.html")).toMatchObject({
+      kirja: "haudatut",
+      kuollut: "3.4.1854",
+      haudattu: "9.4.1854",
+      kyla: "Hetana",
+      talo: "Äijälä",
+      henkilo: { ammatti: "Dreng", etunimi: "Johannes", patronyymi: "Hansson" },
+      kuolinsyy: "Bukref",
+      ika: { vuodet: "28" },
+      kommentit: [{ tyyppi: "alkup", alikentta: "ALKUPKOMM", teksti: "icke gift" }],
+    });
+  });
+
+  it("reads the relative and an age given in months", () => {
+    const haudattu = tapahtuma("tapahtuma-haudatut-omainen.html");
+    expect(haudattu).toMatchObject({
+      henkilo: { ammatti: "Son", etunimi: "Carl Gustaf" },
+      kuolinsyy: "Slag",
+      omainen: { ammatti: "Borg:", sukunimi: "Wikström" },
+    });
+    expect(haudattu).toHaveProperty("ika", { kuukaudet: "2" });
+    expect(haudattu).not.toHaveProperty("kyla");
+  });
+
+  it("keeps the recorder's own comment given as an original comment", () => {
+    expect(tapahtuma("tapahtuma-haudatut-oma.html").kommentit).toEqual([
+      {
+        tyyppi: "alkup",
+        alikentta: "OMA",
+        teksti: "Fiskaren Matts Sundbergs Son [kuollut 2/3 1800]",
+      },
+    ]);
+  });
+});
