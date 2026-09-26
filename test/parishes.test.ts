@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSeurakuntaluettelo, parseVuosivalit } from "../src/parishes.js";
+import { SEURAKUNNAT, parseSeurakuntaluettelo, parseVuosivalit } from "../src/parishes.js";
 import { lueFixture } from "./helpers.js";
 
 describe("parseVuosivalit", () => {
@@ -81,5 +81,13 @@ describe("parseSeurakuntaluettelo", () => {
       nimi: "Karkkila (ent. Pyhäjärvi Ul)",
       rinnakkaisnimi: "Högfors",
     });
+  });
+});
+
+describe("SEURAKUNNAT", () => {
+  // scripts/paivita-seurakunnat.ts writes both the data and the fixture,
+  // so they must always match the current parser output exactly.
+  it("matches the parsed fixture", () => {
+    expect(SEURAKUNNAT).toEqual(parseSeurakuntaluettelo(lueFixture("seurakuntaluettelo.html")));
   });
 });
