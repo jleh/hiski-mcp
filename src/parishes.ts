@@ -61,3 +61,82 @@ export function parseSeurakuntaluettelo(html: string): Seurakunta[] {
   });
   return tulos;
 }
+
+/** Lowercases, strips diacritics (ä→a, ö→o, å→a) and collapses whitespace. */
+export function normalisoi(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** How well a parish matches a query; lower is better. */
+enum Taso {
+  Koodi,
+  Tasmaa,
+  Alkaa,
+  SananAlku,
+  Sisaltaa,
+  Vartalo,
+}
+
+interface Osuma {
+  seurakunta: Seurakunta;
+  taso: Taso;
+}
+
+const sanat = (s: string) => s.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
+const yhteinenAlku = (a: string, b: string) => {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return i;
+};
+
+/**
+ * Finnish parish names are often in the genitive ("Turun", "Kristiinankaupungin"),
+ * so a query word matches a name word when they share most of their beginning.
+ */
+const vartaloTasmaa = (hakusana: string, nimisana: string) =>
+  yhteinenAlku(hakusana, nimisana) >= Math.max(3, hakusana.length - 3);
+
+function luokittele(haku: string, seurakunta: Seurakunta): Taso | undefined {
+  if (/^\d{1,4}$/.test(haku)) {
+    return haku.padStart(4, "0") === seurakunta.koodi ? Taso.Koodi : undefined;
+  }
+  const nimet = [seurakunta.nimi, seurakunta.rinnakkaisnimi, seurakunta.koko_nimi]
+    .filter((n): n is string => n !== undefined)
+    .map(normalisoi);
+  if (nimet.some((n) => n === haku)) return Taso.Tasmaa;
+  if (nimet.some((n) => n.startsWith(haku))) return Taso.Alkaa;
+  const nimisanat = sanat(nimet.join(" "));
+  const hakusanat = sanat(haku);
+  if (hakusanat.length === 0) return undefined;
+  if (hakusanat.every((h) => nimisanat.some((n) => n.startsWith(h)))) return Taso.SananAlku;
+  if (nimet.some((n) => n.includes(haku))) return Taso.Sisaltaa;
+  if (hakusanat.every((h) => nimisanat.some((n) => vartaloTasmaa(h, n)))) return Taso.Vartalo;
+  return undefined;
+}
+
+function etsiOsumat(haku: string, lista: readonly Seurakunta[]): Osuma[] {
+  const normalisoitu = normalisoi(haku);
+  if (!normalisoitu) return [];
+  const osumat = lista
+    .map((seurakunta) => ({ seurakunta, taso: luokittele(normalisoitu, seurakunta) }))
+    .filter((o): o is Osuma => o.taso !== undefined);
+  // Loose stem matches are only useful when nothing better was found.
+  const parempia = osumat.some((o) => o.taso < Taso.Vartalo);
+  return osumat
+    .filter((o) => !parempia || o.taso < Taso.Vartalo)
+    .sort((a, b) => a.taso - b.taso || a.seurakunta.nimi.localeCompare(b.seurakunta.nimi, "fi"));
+}
+
+/** Finds parishes by code, name or parallel name, best matches first. */
+export function etsiSeurakunta(
+  haku: string,
+  lista: readonly Seurakunta[] = SEURAKUNNAT,
+): Seurakunta[] {
+  return etsiOsumat(haku, lista).map((o) => o.seurakunta);
+}

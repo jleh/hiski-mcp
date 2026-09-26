@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { SEURAKUNNAT, parseSeurakuntaluettelo, parseVuosivalit } from "../src/parishes.js";
+import {
+  SEURAKUNNAT,
+  etsiSeurakunta,
+  normalisoi,
+  parseSeurakuntaluettelo,
+  parseVuosivalit,
+} from "../src/parishes.js";
 import { lueFixture } from "./helpers.js";
 
 describe("parseVuosivalit", () => {
@@ -89,5 +95,50 @@ describe("SEURAKUNNAT", () => {
   // so they must always match the current parser output exactly.
   it("matches the parsed fixture", () => {
     expect(SEURAKUNNAT).toEqual(parseSeurakuntaluettelo(lueFixture("seurakuntaluettelo.html")));
+  });
+});
+
+describe("normalisoi", () => {
+  it("lowercases, strips diacritics and collapses whitespace", () => {
+    expect(normalisoi("  Artjärvi   -  ARTSJÖ Åbo ")).toBe("artjarvi - artsjo abo");
+  });
+});
+
+describe("etsiSeurakunta", () => {
+  const koodit = (haku: string) => etsiSeurakunta(haku).map((s) => s.koodi);
+
+  it("finds by exact name regardless of case", () => {
+    expect(koodit("Orimattila")[0]).toBe("0366");
+    expect(koodit("orimattila")[0]).toBe("0366");
+  });
+
+  it("finds by parallel (Swedish) name with or without diacritics", () => {
+    expect(koodit("Artsjö")).toEqual(["0015"]);
+    expect(koodit("artsjo")).toEqual(["0015"]);
+  });
+
+  it("finds by code with or without leading zeros", () => {
+    expect(koodit("0366")).toEqual(["0366"]);
+    expect(koodit("366")).toEqual(["0366"]);
+  });
+
+  it("ranks exact matches before prefix matches", () => {
+    expect(koodit("Kokkola")).toEqual(["0218", "0172"]);
+    expect(koodit("Helsinki")[0]).toBe("0084");
+  });
+
+  it("matches the start of any word in the full name", () => {
+    expect(koodit("Karleby")).toContain("0172");
+    expect(koodit("Pyhäjärvi Ul")).toContain("0426");
+  });
+
+  it("falls back to inflected-stem matching when nothing else matches", () => {
+    expect(koodit("Kristiinankaupunki")).toEqual(expect.arrayContaining(["0236", "0686"]));
+    expect(koodit("Turku")).toEqual(expect.arrayContaining(["0566", "0569"]));
+  });
+
+  it("returns nothing for unknown names", () => {
+    expect(koodit("xyzzy")).toEqual([]);
+    expect(koodit("   ")).toEqual([]);
   });
 });
