@@ -273,6 +273,20 @@ export const FIXTURET: FixtureMaarittely[] = [
     sisaltaa: ["fi+0015+smuutt", "fi+0015+umuutt"],
   },
   {
+    tiedosto: "seurakunta-0627.html",
+    kuvaus: "luovutetun Karjalan seurakunta: huomautus Karjala-tietokannasta",
+    pyynto: { kysely: "fi+0627" },
+    merkisto: "latin1",
+    sisaltaa: ["http://www.karjalatk.fi/", "on tallentanut valtaosan luovutetun Karjalan"],
+  },
+  {
+    tiedosto: "seurakunta-tuntematon.html",
+    kuvaus: "tuntematon seurakuntakoodi",
+    pyynto: { kysely: "fi+9999" },
+    merkisto: "latin1",
+    sisaltaa: ["Virhe parametrissa! Seurakuntaa ei löytynyt."],
+  },
+  {
     tiedosto: "seurakuntatiedot-366.html",
     kuvaus: "seurakunnan lisätiedot: maakunta, historia, naapurit, kylät",
     pyynto: { url: "https://hiski.genealogia.fi/historia/mini-pgsql.php?srk=366&kieli=fi" },
