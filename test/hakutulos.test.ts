@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { FIXTURET } from "../scripts/fixturet.js";
 import { parseHakutulos } from "../src/hakutulos.js";
 import { lueFixture } from "./helpers.js";
 
@@ -81,5 +82,77 @@ describe("parseHakutulos: blocks", () => {
 
   it("returns no blocks for a page without results", () => {
     expect(jasenna("haku-ei-lohkoja.html")).toEqual({ lohkot: [] });
+  });
+});
+
+/** The counts Hiski prints after each table, in page order. */
+function ilmoitetutMaarat(html: string): number[] {
+  const maarat = html.matchAll(
+    /(\d+) tapahtumaa löytyi\.|Näytettiin (\d+) tapahtumaa|yli maksimimäärän \((\d+) tapahtumaa\)|ei löytynyt yhtään/g,
+  );
+  return [...maarat].map((m) => Number(m[1] ?? m[2] ?? m[3] ?? 0));
+}
+
+describe.each(FIXTURET.filter((f) => f.tiedosto.startsWith("haku-")))(
+  "parseHakutulos: $tiedosto",
+  ({ tiedosto }) => {
+    it("finds as many events as Hiski reports", () => {
+      const html = lueFixture(tiedosto);
+      const { lohkot } = parseHakutulos(html);
+      expect(lohkot.map((l) => l.tapahtumat.length)).toEqual(ilmoitetutMaarat(html));
+    });
+  },
+);
+
+describe("parseHakutulos: kastetut", () => {
+  it("parses the columns of a baptism", () => {
+    const [lohko] = jasenna("haku-kastetut-perus.html").lohkot;
+    expect(lohko!.tapahtumat[0]).toEqual({
+      kirja: "kastetut",
+      numero: 18795,
+      url: "https://hiski.genealogia.fi/hiski?fi+0366+kastetut+18795",
+      syntynyt: "21.9.1834",
+      kastettu: "22.9.1834",
+      kyla: "Njemis",
+      talo: "Bärnilä",
+      isa: "B. Johan Hansson",
+      aiti: "Otteliana Andersdotter",
+      lapsi: "Maria Sofia",
+    });
+    expect(lohko!.tapahtumat[2]).toMatchObject({ aiti: "Otteliana Andersdotter", aidin_ika: "22" });
+  });
+
+  const kommentit = jasenna("haku-kastetut-kommentit.html").lohkot[0]!.tapahtumat;
+  const numerolla = (numero: number) => kommentit.find((t) => t.numero === numero);
+
+  it("separates field comments and leaves empty fields out", () => {
+    const tapahtuma = numerolla(22282);
+    expect(tapahtuma).toMatchObject({
+      lapsi: "Theda Aurora",
+      aiti: "Inh. Anna Stina Lenasdr.",
+      aidin_ika: "24",
+      kenttakommentit: { lapsi: ["oägta"] },
+    });
+    expect(tapahtuma).not.toHaveProperty("isa");
+    expect(tapahtuma).not.toHaveProperty("talo");
+  });
+
+  it("finds the mother's age after a field comment", () => {
+    expect(numerolla(22288)).toMatchObject({
+      aiti: "Catharina",
+      aidin_ika: "28",
+      kenttakommentit: { aiti: ["ei patronyymiä"] },
+    });
+  });
+
+  it("finds the mother's age without a separating non-breaking space", () => {
+    expect(numerolla(22287)).toMatchObject({ aiti: "Pig. Anna Lovisa Pehrman", aidin_ika: "29" });
+  });
+
+  it("attaches comment rows to the preceding event", () => {
+    expect(numerolla(22287)!.kommentit).toEqual([
+      { tyyppi: "alkup", alikentta: "ALKUPKOMM", teksti: "Död 19.1.1850" },
+    ]);
+    expect(numerolla(22286)).not.toHaveProperty("kommentit");
   });
 });

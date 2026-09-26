@@ -10,11 +10,34 @@ export type Hakutermi =
   | { kentta: string; haku: string; muodot: string[] }
   | { kentta: string; haku: string; ei_tietokannassa: true };
 
-export interface Tapahtuma {
-  kirja: HakuKirja;
+/** A comment row Hiski prints below an event, e.g. "alkup - ALKUPKOMM: icke gift". */
+export interface Kommentti {
+  tyyppi: string;
+  alikentta: string;
+  teksti: string;
+}
+
+interface Perus {
   numero: number;
   url: string;
+  kommentit?: Kommentti[];
+  /** Short comments attached to a single field, keyed by field name. */
+  kenttakommentit?: Record<string, string[]>;
 }
+
+export interface Kastettu extends Perus {
+  kirja: "kastetut";
+  syntynyt?: string;
+  kastettu?: string;
+  kyla?: string;
+  talo?: string;
+  isa?: string;
+  aiti?: string;
+  aidin_ika?: string;
+  lapsi?: string;
+}
+
+export type Tapahtuma = Kastettu;
 
 export interface Lohko {
   seurakunta: { koodi: string; nimi: string };
@@ -49,6 +72,18 @@ const LOHKON_OTSIKKO = /<FONT SIZE="\+2"><B>([^<]*)<\/B><\/FONT>/gi;
 const TAULUKKO = /<TABLE BORDER=1[^>]*>[^]*?<\/TABLE>/gi;
 const TAPAHTUMALINKKI = /\/hiski\?fi\+(\d{4})\+([a-z]+)\+(\d+)$/;
 const EI_TIETOKANNASSA = "hakutekstiä ei löydy tietokannasta";
+
+/** Which event field each result column holds, per book. */
+const SARAKKEET: Record<HakuKirja, readonly string[]> = {
+  kastetut: ["syntynyt", "kastettu", "kyla", "talo", "isa", "aiti", "lapsi"],
+  vihityt: [],
+  haudatut: [],
+  smuutt: [],
+  umuutt: [],
+};
+
+/** A trailing number or range after a person, e.g. the mother's age "25" or "25-30". */
+const IKA_LOPUSSA = /^(.*?)\s*\b(\d+(?:-\d+)?)$/;
 
 /** Parses a Hiski search result page into per-parish, per-book blocks. */
 export function parseHakutulos(html: string): HakuTulos {
@@ -124,18 +159,60 @@ function parseTapahtumat(taulukko: string): Tapahtuma[] {
   const tapahtumat: Tapahtuma[] = [];
   $("tr").each((_, rivi) => {
     const tapahtuma = parseTapahtumarivi($, rivi);
-    if (tapahtuma) tapahtumat.push(tapahtuma);
+    if (tapahtuma) {
+      tapahtumat.push(tapahtuma);
+      return;
+    }
+    const edellinen = tapahtumat.at(-1);
+    if (edellinen) liitaLisarivi($, rivi, edellinen);
   });
   return tapahtumat;
 }
 
 function parseTapahtumarivi($: cheerio.CheerioAPI, rivi: Element): Tapahtuma | undefined {
-  const href = $(rivi).children("td").first().children("a").attr("href");
+  const solut = $(rivi).children("td");
+  const href = solut.first().children("a").attr("href");
   const linkki = href && TAPAHTUMALINKKI.exec(href);
   if (!linkki) return undefined;
-  return {
-    kirja: linkki[2] as HakuKirja,
+  const kirja = linkki[2] as HakuKirja;
+  const tapahtuma: Record<string, unknown> = {
+    kirja,
     numero: Number(linkki[3]),
     url: `${HISKI_URL}?fi+${linkki[1]}+${linkki[2]}+${linkki[3]}`,
   };
+  const kenttakommentit: Record<string, string[]> = {};
+  SARAKKEET[kirja].forEach((kentta, i) => {
+    const solu = solut.eq(i).clone();
+    solu.children("a").remove();
+    const kommentit = solu
+      .children("small")
+      .remove()
+      .map((_, small) => siisti($(small).text())?.replace(/^\((.*)\)$/, "$1"))
+      .get()
+      .filter(Boolean);
+    if (kommentit.length > 0) kenttakommentit[kentta] = kommentit;
+    const arvo = siisti(solu.text());
+    if (arvo) tapahtuma[kentta] = arvo;
+  });
+  if (Object.keys(kenttakommentit).length > 0) tapahtuma.kenttakommentit = kenttakommentit;
+  if (kirja === "kastetut") erotaAidinIka(tapahtuma as unknown as Kastettu);
+  return tapahtuma as unknown as Tapahtuma;
+}
+
+function erotaAidinIka(tapahtuma: Kastettu) {
+  const osat = tapahtuma.aiti && IKA_LOPUSSA.exec(tapahtuma.aiti);
+  if (!osat) return;
+  const aiti = siisti(osat[1]);
+  if (aiti) tapahtuma.aiti = aiti;
+  else delete tapahtuma.aiti;
+  tapahtuma.aidin_ika = osat[2]!;
+}
+
+/** Attaches a comment row ("alkup - ALKUPKOMM: …") to the event above it. */
+function liitaLisarivi($: cheerio.CheerioAPI, rivi: Element, tapahtuma: Tapahtuma) {
+  const otsake = $(rivi).find("font").first();
+  const merkinta = /^(\S+) - (.+?):$/.exec(siisti(otsake.text()) ?? "");
+  const teksti = siisti($(rivi).find("small").first().text());
+  if (!merkinta || !teksti) return;
+  (tapahtuma.kommentit ??= []).push({ tyyppi: merkinta[1]!, alikentta: merkinta[2]!, teksti });
 }
