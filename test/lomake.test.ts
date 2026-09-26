@@ -133,6 +133,28 @@ describe("rakennaHakulomake", () => {
     expect(() => rakennaHakulomake({ kirja: "kastetut", ...muutos })).toThrow(virhe);
   });
 
+  it("counts the length of decomposed letters as the letters they form", () => {
+    const nimi = "Ka\u0308a\u0308".padEnd(30 + 2, "x"); // 30 letters once composed
+    const lomake = rakennaHakulomake({
+      kirja: "kastetut",
+      seurakunnat: ["0366"],
+      kentat: { ikyla: nimi },
+    });
+    expect(Object.fromEntries(lomake).ikyla).toBe(nimi.normalize("NFC"));
+  });
+
+  it.each([Number.NaN, 0, -5, Number.POSITIVE_INFINITY])("rejects the maximum %s", (maksimi) => {
+    expect(() => rakennaHakulomake({ kirja: "kastetut", seurakunnat: ["0366"], maksimi })).toThrow(
+      /maksimi/,
+    );
+  });
+
+  it("rejects a book that has no search form", () => {
+    expect(() =>
+      rakennaHakulomake({ kirja: "tilastot" as "kastetut", seurakunnat: ["0366"] }),
+    ).toThrow(/tilastot/);
+  });
+
   it("accepts the fields of each book's form", () => {
     expect(() =>
       rakennaHakulomake({ kirja: "smuutt", seurakunnat: ["0015"], kentat: { kohde: "Hauho" } }),

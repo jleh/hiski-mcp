@@ -100,6 +100,11 @@ export function pyoristaMaksimi(n: number): number {
 /** Validates a search and returns the form fields to send to Hiski. */
 export function rakennaHakulomake(pyynto: HakuPyynto): [string, string][] {
   const { kirja, seurakunnat, kentat = {}, alkuvuosi, loppuvuosi, jatkokohta } = pyynto;
+  if (!Object.hasOwn(KENTAT, kirja)) throw new LomakeVirhe(`Kirjalla "${kirja}" ei ole hakua.`);
+  const maksimi = pyynto.maksimi ?? OLETUSMAKSIMI;
+  if (!Number.isFinite(maksimi) || maksimi < 1) {
+    throw new LomakeVirhe(`maksimi ${maksimi} ei kelpaa; anna positiivinen luku.`);
+  }
   if (seurakunnat.length === 0) throw new LomakeVirhe("Anna vähintään yksi seurakunta.");
   for (const koodi of seurakunnat) {
     if (!/^\d{4}$/.test(koodi)) {
@@ -118,7 +123,7 @@ export function rakennaHakulomake(pyynto: HakuPyynto): [string, string][] {
     ["srk", seurakunnat.join(",")],
     ["kirja", kirja],
     ["kieli", "fi"],
-    ["maxkpl", String(pyoristaMaksimi(pyynto.maksimi ?? OLETUSMAKSIMI))],
+    ["maxkpl", String(pyoristaMaksimi(maksimi))],
   ];
   const vuodet = { alkuvuosi: alkuvuosi?.trim(), loppuvuosi: loppuvuosi?.trim() };
   for (const [nimi, arvo] of Object.entries(vuodet)) {
@@ -127,7 +132,8 @@ export function rakennaHakulomake(pyynto: HakuPyynto): [string, string][] {
     lomake.push([nimi, arvo]);
   }
   for (const [nimi, raaka] of Object.entries(kentat)) {
-    const arvo = raaka?.trim();
+    // Composed form, so that a decomposed "ä" counts as one letter.
+    const arvo = raaka?.normalize("NFC").trim();
     if (!arvo) continue;
     if (!KENTAT[kirja].has(nimi)) {
       throw new LomakeVirhe(`Kenttää "${nimi}" ei ole kirjan ${kirja} hakulomakkeella.`);
