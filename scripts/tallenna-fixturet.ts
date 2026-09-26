@@ -48,9 +48,7 @@ async function lataaSinnikkaasti(fixture: FixtureMaarittely): Promise<Uint8Array
 }
 
 const valitut = process.argv.slice(2);
-const ladattavat = valitut.length
-  ? FIXTURET.filter((f) => valitut.includes(f.tiedosto))
-  : FIXTURET;
+const ladattavat = valitut.length ? FIXTURET.filter((f) => valitut.includes(f.tiedosto)) : FIXTURET;
 const tuntemattomat = valitut.filter((v) => !FIXTURET.some((f) => f.tiedosto === v));
 if (tuntemattomat.length) throw new Error(`Tuntemattomat fixturet: ${tuntemattomat.join(", ")}`);
 
@@ -63,14 +61,18 @@ for (const [i, fixture] of ladattavat.entries()) {
     fixture.merkisto === "utf8" ? Buffer.from(sivu).toString("utf8") : decodeLatin1(sivu);
   const puuttuvat = fixture.sisaltaa.filter((s) => !teksti.includes(s));
   if (puuttuvat.length) {
-    virheet.push(`${fixture.tiedosto}: puuttuu ${puuttuvat.map((s) => JSON.stringify(s)).join(", ")}`);
+    virheet.push(
+      `${fixture.tiedosto}: puuttuu ${puuttuvat.map((s) => JSON.stringify(s)).join(", ")}`,
+    );
   }
   valmiit.push([fixture, sivu]);
   console.log(`${puuttuvat.length ? "✗" : "✓"} ${fixture.tiedosto}`);
 }
 
 if (virheet.length) {
-  console.error(`\nMitään ei tallennettu, koska Hiskin vastaukset ovat muuttuneet:\n${virheet.join("\n")}`);
+  console.error(
+    `\nMitään ei tallennettu, koska Hiskin vastaukset ovat muuttuneet:\n${virheet.join("\n")}`,
+  );
   process.exit(1);
 }
 for (const [fixture, sivu] of valmiit) writeFileSync(new URL(fixture.tiedosto, KANSIO), sivu);

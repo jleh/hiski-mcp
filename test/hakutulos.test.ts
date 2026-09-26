@@ -204,7 +204,11 @@ describe("parseHakutulos: haudatut", () => {
 
   it("keeps the recorder's own comment", () => {
     expect(numerolla(9279)!.kommentit).toEqual([
-      { tyyppi: "alkup", alikentta: "OMA", teksti: "Fiskaren Matts Sundbergs Son [kuollut 2/3 1800]" },
+      {
+        tyyppi: "alkup",
+        alikentta: "OMA",
+        teksti: "Fiskaren Matts Sundbergs Son [kuollut 2/3 1800]",
+      },
     ]);
   });
 
@@ -268,7 +272,10 @@ describe("parseHakutulos: kaikki", () => {
       expect(lohko.huomautukset).toEqual(["Haetaan vuodet 1834 - 1835"]);
       expect(lohko.katkaistu).toBe(false);
     }
-    expect(lohkot[1]!.tapahtumat[0]).toMatchObject({ kirja: "vihityt", mies: "Bonde Värd ungkarl Johan Hansson" });
+    expect(lohkot[1]!.tapahtumat[0]).toMatchObject({
+      kirja: "vihityt",
+      mies: "Bonde Värd ungkarl Johan Hansson",
+    });
   });
 });
 
@@ -276,7 +283,7 @@ describe("parseHakutulos: unusual headings", () => {
   it("keeps the whole name when the heading has no book part", () => {
     const html =
       '<FONT SIZE="+2"><B>Orimattila</B></FONT><TABLE BORDER=1><TR><TH>Syntynyt</TABLE>' +
-      '<P>Näillä hakuehdoilla ei löytynyt yhtään tapahtumia.<P><FORM>' +
+      "<P>Näillä hakuehdoilla ei löytynyt yhtään tapahtumia.<P><FORM>" +
       '<input name=srk type=hidden value="0366"><INPUT NAME="kirja" TYPE=hidden VALUE="kastetut"></FORM>';
     expect(parseHakutulos(html).lohkot[0]).toMatchObject({
       seurakunta: { koodi: "0366", nimi: "Orimattila" },
