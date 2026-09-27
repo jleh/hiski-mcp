@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { HiskiClient } from "./client.js";
 import type { HakuKirja } from "./hakutulos.js";
-import type { Lomakekirja } from "./lomake.js";
+import { pyoristaMaksimi, type Lomakekirja } from "./lomake.js";
 import { kirjojenVuodet, muotoileHakutulos, TyokaluVirhe } from "./muotoilu.js";
 import { etsiSeurakunta, ratkaiseSeurakunnat, type Seurakunta } from "./parishes.js";
 
@@ -29,6 +29,8 @@ const tyokalu = <Skeema extends z.ZodRawShape>(maaritys: Tyokalu<Skeema>) =>
 const ETSI_SEURAKUNTA_MAX = 20;
 /** Per-parish maximums: Hiski counts the maximum per parish, so several parishes default lower. */
 const OLETUSMAKSIMI = { yksi: 50, useita: 15 };
+/** Parishes × per-parish maximum: keeps a response a size the agent can read. */
+const YHTEISMAKSIMI = 1000;
 
 interface Hakuparametrit {
   seurakunnat: string[];
@@ -56,6 +58,15 @@ const haku =
         args[parametri] as string | undefined,
       ]),
     );
+    const maksimi =
+      args.maksimi ?? (seurakunnat.length > 1 ? OLETUSMAKSIMI.useita : OLETUSMAKSIMI.yksi);
+    const pyoristetty = pyoristaMaksimi(maksimi);
+    const yhteensa = seurakunnat.length * pyoristetty;
+    if (yhteensa > YHTEISMAKSIMI) {
+      throw new TyokaluVirhe(
+        `Haku voisi palauttaa jopa ${yhteensa} tapahtumaa (${seurakunnat.length} seurakuntaa × maksimi ${pyoristetty}). Seurakuntien määrä × maksimi saa olla enintään ${YHTEISMAKSIMI}: pienennä maksimia tai hae harvemmasta seurakunnasta kerralla.`,
+      );
+    }
     const tulos = await k.hiski.haku(
       {
         kirja: hakukirja,
@@ -63,8 +74,7 @@ const haku =
         kentat: lomakkeelle,
         alkuvuosi: args.alkuvuosi,
         loppuvuosi: args.loppuvuosi,
-        maksimi:
-          args.maksimi ?? (seurakunnat.length > 1 ? OLETUSMAKSIMI.useita : OLETUSMAKSIMI.yksi),
+        maksimi,
         jatkokohta: args.jatkokohta,
       },
       k.signal,
@@ -175,7 +185,7 @@ const hakuehdot = {
     .max(1000)
     .optional()
     .describe(
-      "Tapahtumia enintään seurakuntaa kohden; pyöristetään ylöspäin arvoon 15, 30, 50, 100, 250, 500 tai 1000. Oletus 50 yhdelle seurakunnalle ja 15 usealle.",
+      "Tapahtumia enintään seurakuntaa kohden; pyöristetään ylöspäin arvoon 15, 30, 50, 100, 250, 500 tai 1000. Oletus 50 yhdelle seurakunnalle ja 15 usealle. Seurakuntien määrä × maksimi saa olla enintään 1000.",
     ),
 };
 
