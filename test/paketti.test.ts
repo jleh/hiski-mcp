@@ -34,6 +34,12 @@ describe("manifest.json", () => {
     expect(manifesti.tools).toEqual(TYOKALUT.map((t) => ({ name: t.nimi, description: t.kuvaus })));
   });
 
+  it("links the privacy policy", () => {
+    expect(manifesti.privacy_policies).toEqual([
+      "https://github.com/jleh/hiski-mcp/blob/main/PRIVACY.md",
+    ]);
+  });
+
   it("launches the bundled server with Node", () => {
     expect(manifesti.server).toEqual({
       type: "node",

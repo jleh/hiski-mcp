@@ -21,4 +21,37 @@ describe("README.md", () => {
   it("says it is not made by the Genealogical Society of Finland", () => {
     expect(teksti).toMatch(/ei ole Suomen Sukututkimusseuran/);
   });
+
+  it("has a privacy policy section linking PRIVACY.md", () => {
+    expect(teksti).toMatch(/^## Tietosuoja \(Privacy Policy\)$/m);
+    expect(teksti).toContain("](PRIVACY.md)");
+  });
+});
+
+describe("PRIVACY.md", () => {
+  const tiedosto = new URL("../PRIVACY.md", import.meta.url);
+  const teksti = existsSync(tiedosto) ? readFileSync(tiedosto, "utf8") : "";
+
+  // What Anthropic requires a local connector's privacy policy to cover, in both languages.
+  it.each([
+    "## Tietosuojaseloste",
+    "### Kerättävät tiedot",
+    "### Käyttö ja tallennus",
+    "### Tietojen luovutus kolmansille osapuolille",
+    "### Säilytysaika",
+    "### Yhteystiedot",
+    "## Privacy Policy",
+    "### Data collection",
+    "### Usage and storage",
+    "### Third-party sharing",
+    "### Data retention",
+    "### Contact",
+  ])("has the section %s", (otsikko) => {
+    expect(teksti).toMatch(new RegExp(`^${otsikko.replace(/[()]/g, "\\$&")}$`, "m"));
+  });
+
+  it("names where the searches are sent and how to reach the author", () => {
+    expect(teksti).toContain("hiski.genealogia.fi");
+    expect(teksti).toContain("https://github.com/jleh/hiski-mcp/issues");
+  });
 });
