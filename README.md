@@ -106,10 +106,11 @@ npm run check          # tyyppitarkistus, ESLint, Prettier ja testit
 npm run build          # dist/ (npm-paketti)
 npm run paketoi        # hiski-mcp.mcpb (Claude Desktop)
 npm run testaa-paketti # purkaa paketin tyhjään kansioon ja kokeilee sitä
-npm run test:live      # testit oikeaa Hiskiä vasten (myös ajastettuna CI:ssä)
+npm run test:live      # testit oikeaa Hiskiä vasten (omalla koneella, ks. alla)
 ```
 
 - Parserit testataan Hiskistä tallennettuja sivuja vasten (`test/fixtures/`, luettelo `scripts/fixturet.ts`). Ne päivitetään komennolla `npm run tallenna-fixturet`.
+- Live-testit ajetaan omalla koneella ennen jokaista julkaisua. Hiskin Cloudflare-suojaus estää GitHub Actionsin kaltaisten konesalien osoitteet, joten niitä ei voi ajaa CI:ssä.
 - Seurakuntien nimet ja vuodet ovat tiedostossa `src/data/seurakunnat.json`. Ne päivitetään komennolla `npm run paivita-seurakunnat`, koska Hiskiin lisätään vuosia jatkuvasti.
 - Hiskin erikoisuudet (latin-1-lomakkeet, satunnaiset virhesivut, otsikoton lohko ym.) ja rakenne on kuvattu tiedostossa [docs/toteutussuunnitelma.md](docs/toteutussuunnitelma.md). Julkaisuohje on tiedostossa [docs/julkaisu.md](docs/julkaisu.md).
 
