@@ -27,21 +27,6 @@ Tarvitset [Claude Desktop](https://claude.ai/download) -sovelluksen. Muuta ei ta
 - **Tuloksia ei löydy:** kokeile väljempää hakua, esimerkiksi pelkkää etunimeä ja isän nimeä tai laajempaa vuosiväliä. Katso myös vinkit alta.
 - **Päivitys:** lataa uusin versio samasta linkistä ja asenna se samalla tavalla.
 
-## Näin haet hyvin
-
-- **Kirjoita nimet nykymuodossa.** Hiski löytää myös vanhat ja ruotsinkieliset muodot: _Johan_ löytää myös _Juho_, _Johannes_ ja _Johanss._
-- **Patronyymit** (isännimet) toimivat päätteen kanssa tai ilman: _Johan_, _Johansson_ tai _Juhonpoika_.
-- **Sukunimistä** riittää usein alku, noin viisi kirjainta. Länsi-Suomessa sukunimiä ei usein ollut, ja kirjoihin on voitu merkitä talon nimi.
-- **Kylien nimet** ovat kirjoissa usein ruotsiksi tai vanhassa asussa (Niemi → _Njemis_). Claude voi katsoa seurakunnan kylät ja niiden vanhat nimet.
-- **Rajaa vuosilla**, jos tiedät suunnilleen, milloin tapahtuma oli.
-- **Pyydä tarkat tiedot** kiinnostavasta tapahtumasta. Silloin saat nimet eriteltyinä, alkuperäiset kommentit ja linkin SSHY:n digiarkistoon, jossa voi katsoa alkuperäisen kirkonkirjan kuvaa.
-
-## Hyvä tietää
-
-- **Aineiston rajat:** Hiskissä on tapahtumia 1600-luvulta monessa seurakunnassa 1900-luvun alkupuolelle, ja näkyvissä on vain yli 100 vuotta vanhoja tapahtumia. Kunkin seurakunnan vuodet vaihtelevat, ja Claude voi tarkistaa ne. Tyhjä tulos ei tarkoita, ettei tapahtumaa olisi ollut: se voi olla kirjassa, jota ei ole tallennettu, toisessa seurakunnassa tai eri kirjoitusasulla.
-- **Tiedoissa voi olla virheitä.** Tarkista tärkeät tiedot alkuperäisestä kirkonkirjasta (digiarkiston linkki).
-- **Hiskiä kunnioittaen:** haut tehdään omalta koneeltasi suoraan HisKi-palveluun, jota ylläpidetään vapaaehtoisvoimin. Vältä valtavia massahakuja.
-
 ## Tietosuoja (Privacy Policy)
 
 Laajennus ei kerää eikä tallenna tietoja, eikä siinä ole analytiikkaa tai telemetriaa. Hakuehdot, kuten nimet, seurakunnat ja vuodet, lähetetään omalta koneeltasi suoraan HisKi-palveluun (hiski.genealogia.fi), joka näkee myös IP-osoitteesi. Muualle tietoja ei lähetetä. Koko tietosuojaseloste suomeksi ja englanniksi: [PRIVACY.md](PRIVACY.md).
