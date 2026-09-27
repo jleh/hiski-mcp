@@ -16,6 +16,7 @@
     "url": "https://github.com/jleh/hiski-mcp"
   },
   "support": "https://github.com/jleh/hiski-mcp/issues",
+  "privacy_policies": ["https://github.com/jleh/hiski-mcp/blob/main/PRIVACY.md"],
   "icon": "icon.png",
   "license": "MIT",
   "keywords": ["sukututkimus", "genealogy", "hiski", "kirkonkirjat", "Suomi"],

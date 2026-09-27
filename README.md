@@ -41,7 +41,10 @@ Tarvitset [Claude Desktop](https://claude.ai/download) -sovelluksen. Muuta ei ta
 - **Aineiston rajat:** Hiskissä on tapahtumia 1600-luvulta monessa seurakunnassa 1900-luvun alkupuolelle, ja näkyvissä on vain yli 100 vuotta vanhoja tapahtumia. Kunkin seurakunnan vuodet vaihtelevat, ja Claude voi tarkistaa ne. Tyhjä tulos ei tarkoita, ettei tapahtumaa olisi ollut: se voi olla kirjassa, jota ei ole tallennettu, toisessa seurakunnassa tai eri kirjoitusasulla.
 - **Tiedoissa voi olla virheitä.** Tarkista tärkeät tiedot alkuperäisestä kirkonkirjasta (digiarkiston linkki).
 - **Hiskiä kunnioittaen:** haut tehdään omalta koneeltasi suoraan HisKi-palveluun, jota ylläpidetään vapaaehtoisvoimin. Vältä valtavia massahakuja.
-- **Tietosuoja:** laajennus ei tallenna eikä lähetä tietoja minnekään muualle kuin HisKi-palveluun.
+
+## Tietosuoja (Privacy Policy)
+
+Laajennus ei kerää eikä tallenna tietoja, eikä siinä ole analytiikkaa tai telemetriaa. Hakuehdot, kuten nimet, seurakunnat ja vuodet, lähetetään omalta koneeltasi suoraan HisKi-palveluun (hiski.genealogia.fi), joka näkee myös IP-osoitteesi. Muualle tietoja ei lähetetä. Koko tietosuojaseloste suomeksi ja englanniksi: [PRIVACY.md](PRIVACY.md).
 
 ---
 
@@ -122,4 +125,4 @@ Palaute ja virheilmoitukset: [GitHub Issues](https://github.com/jleh/hiski-mcp/i
 
 ---
 
-**In English:** an unofficial [MCP](https://modelcontextprotocol.io) server for searching the [HisKi](https://hiski.genealogia.fi/hiski?fi) database of Finnish parish records (baptisms, marriages, burials and migrations). Install `hiski-mcp.mcpb` in Claude Desktop, or run `npx -y hiski-mcp` in any MCP client. Not affiliated with the Genealogical Society of Finland.
+**In English:** an unofficial [MCP](https://modelcontextprotocol.io) server for searching the [HisKi](https://hiski.genealogia.fi/hiski?fi) database of Finnish parish records (baptisms, marriages, burials and migrations). Install `hiski-mcp.mcpb` in Claude Desktop, or run `npx -y hiski-mcp` in any MCP client. Not affiliated with the Genealogical Society of Finland. It collects no data; searches go straight from your computer to HisKi. See the [privacy policy](PRIVACY.md#privacy-policy).
