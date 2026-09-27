@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SEURAKUNNAT } from "../src/parishes.js";
 import { kutsu, yhdista, type Pyynto } from "./palvelin-apu.js";
 
 /** The fields of a recorded search, in any order (ASCII values only). */
@@ -275,5 +276,46 @@ describe("hae_kaikki", () => {
       vapaaNOT: "Torp",
     });
     expect((json as Tulos).lohkot.map((l) => l.kirja)).toEqual(["kastetut", "vihityt"]);
+  });
+});
+
+describe("the combined maximum of a search", () => {
+  const koodit = (n: number) => SEURAKUNNAT.slice(0, n).map((s) => s.koodi);
+
+  it("refuses a search that could return over 1000 events, without asking Hiski", async () => {
+    const { asiakas, pyynnot } = await yhdista();
+    const { virhe, teksti } = await kutsu(asiakas, "hae_kastetut", {
+      seurakunnat: koodit(5),
+      lapsen_etunimi: "Johan",
+      maksimi: 250,
+    });
+    expect(virhe).toBe(true);
+    expect(teksti).toMatch(/1250.*5 seurakuntaa.*250.*1000/);
+    expect(pyynnot).toHaveLength(0);
+  });
+
+  it("counts the maximum as Hiski rounds it up", async () => {
+    const { asiakas, pyynnot } = await yhdista();
+    const { virhe } = await kutsu(asiakas, "hae_kaikki", {
+      seurakunnat: koodit(3),
+      etunimi: "Johan",
+      maksimi: 251,
+    });
+    expect(virhe).toBe(true);
+    expect(pyynnot).toHaveLength(0);
+  });
+
+  it.each([
+    [1, 1000],
+    [4, 250],
+    [30, undefined],
+  ])("allows %i parishes with the maximum %s", async (n, maksimi) => {
+    const { asiakas, pyynnot } = await yhdista({ fixture: "haku-kastetut-katkaistu-monta.html" });
+    await kutsu(asiakas, "hae_kastetut", {
+      seurakunnat: koodit(n),
+      lapsen_etunimi: "Johan",
+      ...(maksimi && { maksimi }),
+    });
+    expect(pyynnot).toHaveLength(1);
   });
 });
