@@ -6,6 +6,7 @@ Julkaisu tapahtuu tagilla. `.github/workflows/julkaisu.yml` tarkistaa, että tag
 
 ```bash
 git switch main && git pull
+npm run paivita-seurakunnat   # Hiskiin lisätään vuosia jatkuvasti; commitoi muutokset PR:nä ennen julkaisua
 npm version 0.2.0          # päivittää package.json:n ja manifest.json:n, tekee commitin ja tagin v0.2.0
 git push origin main v0.2.0
 ```
