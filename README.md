@@ -1,11 +1,11 @@
-# HisKi-haut Claudelle (hiski-mcp)
+# hiski-mcp
 
 Tämän laajennuksen avulla Claude (tai muu tekoälyavustaja) osaa hakea tietoja **HisKi-tietokannasta**: seurakuntien historiakirjoista kastetuista, vihityistä, haudatuista sekä sisään- ja poismuuttaneista. Voit kysyä tavallisella kielellä, ja Claude tekee haut puolestasi ja kokoaa tulokset.
 
 Esimerkkejä kysymyksistä:
 
 - _Hae Orimattilan kastetuista Johan Hanssonin ja Ottilia Andersdotterin lapset._
-- _Milloin Maria Sofia syntyi, ja mitä hänen vanhemmistaan on merkitty?_
+- _Hae Orimattilan haudatuista Johan Hanssonit vuosilta 1850–1860 ja kerro heidän kuolinsyynsä._
 - _Mitkä ovat Artjärven naapuriseurakunnat, ja miltä vuosilta Hiskissä on niiden vihityt?_
 - _Etsi Johan Hanssonia kaikista Orimattilan ja Artjärven kirjoista vuosilta 1850–1855._
 
