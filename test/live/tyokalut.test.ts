@@ -1,6 +1,7 @@
 /**
  * The MCP tools against the real Hiski with known, stable historical records.
- * Run with `npm run test:live`; also weekly in .github/workflows/live.yml.
+ * Run with `npm run test:live` on your own machine before each release: Hiski
+ * blocks data centre addresses such as GitHub Actions runners.
  */
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { beforeAll, describe, expect, it } from "vitest";
